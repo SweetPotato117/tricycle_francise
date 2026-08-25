@@ -1089,16 +1089,29 @@
   document.getElementById('lightboxCloseBtn').addEventListener('click', closeLightbox);
   lightboxOverlay.addEventListener('click', (e) => { if (e.target === lightboxOverlay) closeLightbox(); });
 
-  /* ---------- data (mirrors `franchises` + `franchise_tricycle` tables) ---------- */
-  let franchises = [
-    { id: 1, name: "Santos Franchise", owner: "Ricardo Santos", address: "Purok 3, Brgy. San Isidro, Bayombong", issue: "2023-01-15", expiry: "2027-01-15", status: "Active", tricycles: ["ABC-1234"], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 2, name: "Reyes Franchise", owner: "Marlon Reyes", address: "Brgy. Salvacion, Bayombong", issue: "2022-06-10", expiry: "2026-06-10", status: "Active", tricycles: ["DEF-5678"], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 3, name: "Bautista Franchise", owner: "Ramil Bautista", address: "Brgy. Vista Alegre, Bayombong", issue: "2021-03-22", expiry: "2025-03-22", status: "Expired", tricycles: ["GHI-9012"], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 4, name: "Mendoza Franchise", owner: "Carlo Mendoza", address: "Brgy. Paitan, Bayombong", issue: "2023-09-05", expiry: "2026-09-05", status: "Active", tricycles: ["JKL-3456"], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 5, name: "Fernandez Franchise", owner: "Liza Fernandez", address: "Brgy. Homestead, Bayombong", issue: "2022-11-30", expiry: "2025-11-30", status: "Pending Renewal", tricycles: ["MNO-7890"], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 6, name: "Villanueva Franchise", owner: "Anna Villanueva", address: "Brgy. Bonfal East, Bayombong", issue: "2023-04-18", expiry: "2027-04-18", status: "Active", tricycles: [], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" },
-    { id: 7, name: "Ramos Franchise", owner: "Jose Ramos", address: "Zone 2, Brgy. Bansing, Bayombong", issue: "2022-02-14", expiry: "2025-10-30", status: "Pending Renewal", tricycles: [], receiptDataUrl: "", receipt: "", receiptUploadedBy: "" }
-  ];
+  /* ---------- data loaded from the franchise tables ---------- */
+  const franchiseApi = '../controllers/franchise_management.php';
+  let franchises = [];
+
+  async function apiRequest(payload = null) {
+    const options = payload ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) } : {};
+    const response = await fetch(franchiseApi, options);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
+    return result;
+  }
+
+  async function loadFranchises() {
+    try {
+      const result = await apiRequest();
+      franchises = result.franchises;
+      updateStats();
+      render();
+    } catch (error) {
+      emptyState.classList.remove('hidden');
+      emptyState.querySelector('div').textContent = error.message;
+    }
+  }
 
   const tableBody = document.getElementById('franchiseTableBody');
   const emptyState = document.getElementById('emptyState');
@@ -1204,9 +1217,15 @@
     tableBody.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => openViewModal(Number(btn.dataset.id))));
     tableBody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEditModal(Number(btn.dataset.id))));
     tableBody.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => openDeleteModal(Number(btn.dataset.id))));
-    tableBody.querySelectorAll('.renew').forEach(btn => btn.addEventListener('click', () => {
+    tableBody.querySelectorAll('.renew').forEach(btn => btn.addEventListener('click', async () => {
       const f = franchises.find(x => x.id === Number(btn.dataset.id));
-      if (f) { f.status = 'Active'; updateStats(); render(); }
+      if (!f) return;
+      try {
+        await apiRequest({ action: 'update', id: f.id, name: f.name, owner: f.owner, address: f.address, issue: f.issue, expiry: f.expiry, status: 'Active' });
+        await loadFranchises();
+      } catch (error) {
+        alert(error.message);
+      }
     }));
   }
 
@@ -1317,7 +1336,7 @@
   document.getElementById('franchiseCancelBtn').addEventListener('click', closeFranchiseModal);
   franchiseModalOverlay.addEventListener('click', (e) => { if (e.target === franchiseModalOverlay) closeFranchiseModal(); });
 
-  franchiseForm.addEventListener('submit', (e) => {
+  franchiseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
       name: document.getElementById('fName').value.trim(),
@@ -1331,17 +1350,13 @@
       receiptUploadedBy: formReceipt.uploadedBy
     };
 
-    if (editingId) {
-      const f = franchises.find(x => x.id === editingId);
-      Object.assign(f, payload);
-    } else {
-      const newId = Math.max(...franchises.map(f => f.id)) + 1;
-      franchises.push({ id: newId, ...payload, tricycles: [] });
+    try {
+      await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
+      await loadFranchises();
+      closeFranchiseModal();
+    } catch (error) {
+      alert(error.message);
     }
-
-    updateStats();
-    render();
-    closeFranchiseModal();
   });
 
   /* ---------- view modal ---------- */
@@ -1414,18 +1429,20 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (deletingId != null) {
-      franchises = franchises.filter(f => f.id !== deletingId);
-      updateStats();
-      render();
+      try {
+        await apiRequest({ action: 'delete', id: deletingId });
+        await loadFranchises();
+      } catch (error) {
+        alert(error.message);
+      }
     }
     closeDeleteModal();
   });
 
   /* ---------- init ---------- */
-  updateStats();
-  render();
+  loadFranchises();
 </script>
 
 </body>

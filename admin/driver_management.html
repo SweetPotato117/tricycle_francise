@@ -674,7 +674,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
         Tricycle Management
       </a></li>
-      <li><a href="add_franchise.html" class="nav-link">
+      <li><a href="franchise_management.html" class="nav-link">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Franchise Management
       </a></li>
@@ -832,7 +832,7 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     Drivers
   </a>
-  <a href="add_franchise.html" class="bn-item">
+  <a href="franchise_management.html" class="bn-item">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
     Renewals
   </a>
@@ -891,24 +891,27 @@
         </div>
         <div class="form-field full">
           <label>Driver's License</label>
-          <div class="file-field">
+          <div class="file-field" data-upload-label="driverLicenseFile">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Upload driver's license (image or PDF)</span>
           </div>
+          <input type="file" id="driverLicenseFile" accept="image/*,.pdf">
         </div>
         <div class="form-field">
           <label>OR/CR</label>
-          <div class="file-field">
+          <div class="file-field" data-upload-label="orCrFile">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Upload OR/CR</span>
           </div>
+          <input type="file" id="orCrFile" accept="image/*,.pdf">
         </div>
         <div class="form-field">
           <label>President's Certificate</label>
-          <div class="file-field">
+          <div class="file-field" data-upload-label="presidentCertificateFile">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Upload certificate</span>
           </div>
+          <input type="file" id="presidentCertificateFile" accept="image/*,.pdf">
         </div>
       </div>
       <div class="modal-footer">
@@ -937,10 +940,10 @@
       <div class="view-item"><div class="vlabel">Driver ID</div><div class="vvalue" id="vId">—</div></div>
       <div class="view-item full"><div class="vlabel">Address</div><div class="vvalue" id="vAddress">—</div></div>
     </div>
-    <div class="doc-list">
-      <div class="doc-row"><div class="doc-name">📄 Driver's License</div><span class="doc-link">View file</span></div>
-      <div class="doc-row"><div class="doc-name">📄 OR/CR</div><span class="doc-link">View file</span></div>
-      <div class="doc-row"><div class="doc-name">📄 President's Certificate</div><span class="doc-link">View file</span></div>
+    <div class="doc-list" id="driverDocuments">
+      <div class="doc-row"><div class="doc-name">Driver's License</div><span class="doc-link">No file</span></div>
+      <div class="doc-row"><div class="doc-name">OR/CR</div><span class="doc-link">No file</span></div>
+      <div class="doc-row"><div class="doc-name">President's Certificate</div><span class="doc-link">No file</span></div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn-secondary" id="viewCloseBtn">Close</button>
@@ -958,17 +961,50 @@
   hamburgerBtn.addEventListener('click', openDrawer);
   overlay.addEventListener('click', closeDrawer);
 
-  /* ---------- data (mirrors `drivers` + `driver_tricycle` tables) ---------- */
-  let drivers = [
-    { id: 1, name: "Juan Dela Cruz", contact: "0917 123 4567", age: 34, gender: "Male", address: "Purok 3, Brgy. San Isidro, Bayombong", tricycle: "ABC-1234", status: "Approved" },
-    { id: 2, name: "Jose Ramos", contact: "0928 456 7890", age: 41, gender: "Male", address: "Zone 2, Brgy. Bansing, Bayombong", tricycle: "DEF-5678", status: "Approved" },
-    { id: 3, name: "Regie Santos", contact: "0935 789 1234", age: 29, gender: "Male", address: "Brgy. Don Mariano, Bayombong", tricycle: "Unassigned", status: "Pending" },
-    { id: 4, name: "Marlon Reyes", contact: "0906 234 5678", age: 47, gender: "Male", address: "Brgy. Salvacion, Bayombong", tricycle: "GHI-9012", status: "For Review" },
-    { id: 5, name: "Anna Villanueva", contact: "0917 890 1234", age: 31, gender: "Female", address: "Brgy. Bonfal East, Bayombong", tricycle: "Unassigned", status: "Pending" },
-    { id: 6, name: "Carlo Mendoza", contact: "0945 321 0987", age: 38, gender: "Male", address: "Brgy. Paitan, Bayombong", tricycle: "JKL-3456", status: "Approved" },
-    { id: 7, name: "Liza Fernandez", contact: "0918 654 3210", age: 26, gender: "Female", address: "Brgy. Homestead, Bayombong", tricycle: "Unassigned", status: "For Review" },
-    { id: 8, name: "Ramil Bautista", contact: "0927 111 2233", age: 44, gender: "Male", address: "Brgy. Vista Alegre, Bayombong", tricycle: "Unassigned", status: "Pending" }
-  ];
+  /* ---------- data loaded from the drivers tables ---------- */
+  const driverApi = '../controllers/driver_management.php';
+  let drivers = [];
+  const driverFiles = ['driverLicenseFile', 'orCrFile', 'presidentCertificateFile'];
+  const driverFileData = { driverLicenseData: '', orCrData: '', presidentCertificateData: '' };
+
+  function readDriverFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => { driverFileData[input.dataset.payload] = event.target.result; input.previousElementSibling.querySelector('span').textContent = file.name; };
+    reader.readAsDataURL(file);
+  }
+  driverFiles.forEach(id => {
+    const input = document.getElementById(id);
+    input.dataset.payload = id === 'driverLicenseFile' ? 'driverLicenseData' : id === 'orCrFile' ? 'orCrData' : 'presidentCertificateData';
+    input.style.display = 'none';
+    input.previousElementSibling.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => readDriverFile(input));
+  });
+
+  async function apiRequest(payload = null) {
+    const options = payload ? {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    } : {};
+    const response = await fetch(driverApi, options);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
+    return result;
+  }
+
+  async function loadDrivers() {
+    try {
+      const result = await apiRequest();
+      drivers = result.drivers;
+      updateStats();
+      render();
+    } catch (error) {
+      emptyState.classList.remove('hidden');
+      emptyState.querySelector('div').textContent = error.message;
+    }
+  }
 
   const tableBody = document.getElementById('driverTableBody');
   const emptyState = document.getElementById('emptyState');
@@ -1055,9 +1091,17 @@
 
     tableBody.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => openViewModal(Number(btn.dataset.id))));
     tableBody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEditModal(Number(btn.dataset.id))));
-    tableBody.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', () => {
+    tableBody.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', async () => {
       const driver = drivers.find(d => d.id === Number(btn.dataset.id));
-      if (driver) { driver.status = 'Approved'; updateStats(); render(); }
+      if (!driver) return;
+      try {
+        await apiRequest({ action: 'approve', id: driver.id });
+        driver.status = 'Approved';
+        updateStats();
+        render();
+      } catch (error) {
+        alert(error.message);
+      }
     }));
   }
 
@@ -1082,6 +1126,10 @@
     editingId = null;
     driverModalTitle.textContent = 'Add Driver';
     driverForm.reset();
+    driverFiles.forEach(id => { document.getElementById(id).value = ''; });
+    driverFileData.driverLicenseData = '';
+    driverFileData.orCrData = '';
+    driverFileData.presidentCertificateData = '';
     driverModalOverlay.classList.add('open');
   }
 
@@ -1096,6 +1144,10 @@
     document.getElementById('fGender').value = d.gender;
     document.getElementById('fStatus').value = d.status;
     document.getElementById('fAddress').value = d.address;
+    driverFiles.forEach(id => { document.getElementById(id).value = ''; });
+    driverFileData.driverLicenseData = '';
+    driverFileData.orCrData = '';
+    driverFileData.presidentCertificateData = '';
     driverModalOverlay.classList.add('open');
   }
 
@@ -1106,7 +1158,7 @@
   document.getElementById('driverCancelBtn').addEventListener('click', closeDriverModal);
   driverModalOverlay.addEventListener('click', (e) => { if (e.target === driverModalOverlay) closeDriverModal(); });
 
-  driverForm.addEventListener('submit', (e) => {
+  driverForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
       name: document.getElementById('fFullName').value.trim(),
@@ -1118,17 +1170,13 @@
       tricycle: "Unassigned"
     };
 
-    if (editingId) {
-      const d = drivers.find(x => x.id === editingId);
-      Object.assign(d, payload, { tricycle: d.tricycle });
-    } else {
-      const newId = Math.max(...drivers.map(d => d.id)) + 1;
-      drivers.push({ id: newId, ...payload });
+    try {
+      await apiRequest({ ...payload, ...driverFileData, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
+      await loadDrivers();
+      closeDriverModal();
+    } catch (error) {
+      alert(error.message);
     }
-
-    updateStats();
-    render();
-    closeDriverModal();
   });
 
   /* ---------- view modal ---------- */
@@ -1144,6 +1192,11 @@
     document.getElementById('vTricycle').textContent = d.tricycle;
     document.getElementById('vId').textContent = `#${String(d.id).padStart(4, '0')}`;
     document.getElementById('vAddress').textContent = d.address;
+    const documentLinks = [d.driverLicense, d.orCr, d.presidentCertificate];
+    document.querySelectorAll('#driverDocuments .doc-link').forEach((link, index) => {
+      link.textContent = documentLinks[index] ? 'View file' : 'No file';
+      link.onclick = documentLinks[index] ? () => window.open(documentLinks[index], '_blank') : null;
+    });
     viewModalOverlay.classList.add('open');
   }
 
@@ -1154,8 +1207,7 @@
   viewModalOverlay.addEventListener('click', (e) => { if (e.target === viewModalOverlay) closeViewModal(); });
 
   /* ---------- init ---------- */
-  updateStats();
-  render();
+  loadDrivers();
 </script>
 
 </body>

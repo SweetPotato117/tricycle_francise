@@ -1198,16 +1198,49 @@
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
 
-  /* ---------- data (mirrors the `renewals` table + receipt_photo / receipt_submitted_at) ---------- */
-  let renewals = [
-    { id: 1, franchise: "Santos Franchise", year: 2026, renewalDate: "2026-01-10", dueDate: "2026-01-15", penalty: 0, remarks: "", status: "Confirmed", receipt: "receipt_santos_2026.jpg", receiptDataUrl: mockReceiptImage("Santos Franchise", "1,200.00"), receiptSubmittedAt: "2026-01-10", uploadedBy: "Rider", confirmedBy: "Admin", confirmedAt: "2026-01-11" },
-    { id: 2, franchise: "Reyes Franchise", year: 2026, renewalDate: "2026-06-08", dueDate: "2026-06-10", penalty: 0, remarks: "", status: "Confirmed", receipt: "receipt_reyes_2026.jpg", receiptDataUrl: mockReceiptImage("Reyes Franchise", "1,200.00"), receiptSubmittedAt: "2026-06-08", uploadedBy: "Rider", confirmedBy: "Admin", confirmedAt: "2026-06-09" },
-    { id: 3, franchise: "Bautista Franchise", year: 2025, renewalDate: "", dueDate: "2025-03-22", penalty: 500.00, remarks: "Overdue, franchise expired", status: "Not Submitted", receipt: "", receiptDataUrl: "", receiptSubmittedAt: "", uploadedBy: "", confirmedBy: "", confirmedAt: "" },
-    { id: 4, franchise: "Mendoza Franchise", year: 2026, renewalDate: "2026-09-01", dueDate: "2026-09-05", penalty: 0, remarks: "", status: "Submitted", receipt: "receipt_mendoza_2026.jpg", receiptDataUrl: mockReceiptImage("Mendoza Franchise", "1,200.00"), receiptSubmittedAt: "2026-09-01", uploadedBy: "Rider", confirmedBy: "", confirmedAt: "" },
-    { id: 5, franchise: "Fernandez Franchise", year: 2025, renewalDate: "", dueDate: "2025-11-30", penalty: 250.00, remarks: "Awaiting owner submission", status: "Not Submitted", receipt: "", receiptDataUrl: "", receiptSubmittedAt: "", uploadedBy: "", confirmedBy: "", confirmedAt: "" },
-    { id: 6, franchise: "Villanueva Franchise", year: 2027, renewalDate: "2027-04-12", dueDate: "2027-04-18", penalty: 0, remarks: "", status: "Submitted", receipt: "receipt_villanueva_2027.jpg", receiptDataUrl: mockReceiptImage("Villanueva Franchise", "1,200.00"), receiptSubmittedAt: "2027-04-12", uploadedBy: "Rider", confirmedBy: "", confirmedAt: "" },
-    { id: 7, franchise: "Ramos Franchise", year: 2025, renewalDate: "", dueDate: "2025-10-30", penalty: 150.00, remarks: "Reminder sent", status: "Not Submitted", receipt: "", receiptDataUrl: "", receiptSubmittedAt: "", uploadedBy: "", confirmedBy: "", confirmedAt: "" }
-  ];
+  /* ---------- data loaded from the renewal tables ---------- */
+  const renewalApi = '../controllers/renewals.php';
+  let renewals = [];
+
+  async function apiRequest(payload = null) {
+    const options = payload ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) } : {};
+    const response = await fetch(renewalApi, options);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
+    return result;
+  }
+
+  function populateFranchises(franchises) {
+    const select = document.getElementById('fFranchise');
+    select.innerHTML = '<option value="" disabled selected>Select franchise</option>' + franchises.map(f => `<option value="${f.franchise_id}">${f.franchise_name}</option>`).join('');
+  }
+
+  function renewalRequestData(r, overrides = {}) {
+    return {
+      franchise_id: r.franchiseId,
+      year: r.year,
+      renewalDate: r.renewalDate,
+      dueDate: r.dueDate,
+      penalty: r.penalty,
+      remarks: r.remarks,
+      status: r.status,
+      receiptDataUrl: r.receiptDataUrl,
+      ...overrides
+    };
+  }
+
+  async function loadRenewals() {
+    try {
+      const result = await apiRequest();
+      renewals = result.renewals;
+      populateFranchises(result.franchises);
+      updateStats();
+      render();
+    } catch (error) {
+      emptyState.classList.remove('hidden');
+      emptyState.querySelector('div').textContent = error.message;
+    }
+  }
 
   const tableBody = document.getElementById('renewalTableBody');
   const emptyState = document.getElementById('emptyState');
@@ -1428,7 +1461,7 @@
     if (!r) return;
     editingId = id;
     renewalModalTitle.textContent = 'Edit Renewal';
-    document.getElementById('fFranchise').value = r.franchise;
+    document.getElementById('fFranchise').value = r.franchiseId;
     document.getElementById('fYear').value = r.year;
     document.getElementById('fPenalty').value = r.penalty;
     document.getElementById('fRenewalDate').value = r.renewalDate;
@@ -1452,10 +1485,10 @@
   document.getElementById('renewalCancelBtn').addEventListener('click', closeRenewalModal);
   renewalModalOverlay.addEventListener('click', (e) => { if (e.target === renewalModalOverlay) closeRenewalModal(); });
 
-  renewalForm.addEventListener('submit', (e) => {
+  renewalForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
-      franchise: document.getElementById('fFranchise').value,
+      franchise_id: document.getElementById('fFranchise').value,
       year: Number(document.getElementById('fYear').value),
       penalty: Number(document.getElementById('fPenalty').value) || 0,
       renewalDate: document.getElementById('fRenewalDate').value,
@@ -1465,20 +1498,16 @@
       receiptDataUrl: formReceipt.dataUrl,
       receipt: formReceipt.name,
       uploadedBy: formReceipt.uploadedBy,
-      receiptSubmittedAt: formReceipt.submittedAt
+      receiptDataUrl: formReceipt.dataUrl
     };
 
-    if (editingId) {
-      const r = renewals.find(x => x.id === editingId);
-      Object.assign(r, payload);
-    } else {
-      const newId = Math.max(...renewals.map(r => r.id)) + 1;
-      renewals.push({ id: newId, ...payload, confirmedBy: "", confirmedAt: "" });
+    try {
+      await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
+      await loadRenewals();
+      closeRenewalModal();
+    } catch (error) {
+      alert(error.message);
     }
-
-    updateStats();
-    render();
-    closeRenewalModal();
   });
 
   /* ---------- view modal ---------- */
@@ -1512,12 +1541,7 @@
       const confirmBtn = document.getElementById('confirmFromPanelBtn');
       if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
-          r.status = 'Confirmed';
-          r.confirmedBy = 'Admin';
-          r.confirmedAt = new Date().toISOString().slice(0, 10);
-          updateStats();
-          render();
-          openViewModal(r.id);
+          apiRequest({ action: 'confirm', id: r.id }).then(loadRenewals).then(() => openViewModal(r.id)).catch(error => alert(error.message));
         });
       }
     } else {
@@ -1544,14 +1568,11 @@
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      r.receiptDataUrl = e.target.result;
-      r.receipt = file.name;
-      r.uploadedBy = 'Admin';
-      r.receiptSubmittedAt = new Date().toISOString().slice(0, 10);
-      if (r.status === 'Not Submitted') r.status = 'Submitted';
-      updateStats();
-      render();
-      renderReceiptPanel(r);
+      const updated = { ...r, receiptDataUrl: e.target.result, status: r.status === 'Not Submitted' ? 'Submitted' : r.status };
+      apiRequest({ ...renewalRequestData(updated), action: 'update', id: r.id })
+        .then(loadRenewals)
+        .then(() => openViewModal(r.id))
+        .catch(error => alert(error.message));
     };
     reader.readAsDataURL(file);
   }
@@ -1618,16 +1639,10 @@
   document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
   confirmModalOverlay.addEventListener('click', (e) => { if (e.target === confirmModalOverlay) closeConfirmModal(); });
 
-  document.getElementById('confirmYesBtn').addEventListener('click', () => {
+  document.getElementById('confirmYesBtn').addEventListener('click', async () => {
     if (confirmingId != null) {
-      const r = renewals.find(x => x.id === confirmingId);
-      if (r) {
-        r.status = 'Confirmed';
-        r.confirmedBy = 'Admin';
-        r.confirmedAt = new Date().toISOString().slice(0, 10);
-        updateStats();
-        render();
-      }
+      try { await apiRequest({ action: 'confirm', id: confirmingId }); await loadRenewals(); }
+      catch (error) { alert(error.message); }
     }
     closeConfirmModal();
   });
@@ -1650,18 +1665,16 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (deletingId != null) {
-      renewals = renewals.filter(r => r.id !== deletingId);
-      updateStats();
-      render();
+      try { await apiRequest({ action: 'delete', id: deletingId }); await loadRenewals(); }
+      catch (error) { alert(error.message); }
     }
     closeDeleteModal();
   });
 
   /* ---------- init ---------- */
-  updateStats();
-  render();
+  loadRenewals();
 </script>
 
 </body>

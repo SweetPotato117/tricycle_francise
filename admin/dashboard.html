@@ -596,7 +596,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
         Tricycle Management
       </a></li>
-      <li><a href="add_franchise.html" class="nav-link">
+      <li><a href="franchise_management.html" class="nav-link">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Franchise Management
       </a></li>
@@ -651,7 +651,7 @@
       <div class="stat-card">
         <div class="stat-label">Total Drivers</div>
         <div class="stat-row">
-          <div class="stat-value">150</div>
+          <div class="stat-value" id="statTotalDrivers">0</div>
           <div class="icon-badge blue-bg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
@@ -660,7 +660,7 @@
       <div class="stat-card">
         <div class="stat-label">Active Drivers</div>
         <div class="stat-row">
-          <div class="stat-value">120</div>
+          <div class="stat-value" id="statActiveDrivers">0</div>
           <div class="icon-badge green-bg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
@@ -669,7 +669,7 @@
       <div class="stat-card">
         <div class="stat-label">Inactive Drivers</div>
         <div class="stat-row">
-          <div class="stat-value">98</div>
+          <div class="stat-value" id="statInactiveDrivers">0</div>
           <div class="icon-badge red-bg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
@@ -678,7 +678,7 @@
       <div class="stat-card">
         <div class="stat-label">Pending Licenses</div>
         <div class="stat-row">
-          <div class="stat-value">15</div>
+          <div class="stat-value" id="statPendingLicenses">0</div>
           <div class="icon-badge purple-bg">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
@@ -695,12 +695,7 @@
             <thead>
               <tr><th>Driver Name</th><th>License Expiry</th><th>Status</th></tr>
             </thead>
-            <tbody>
-              <tr><td>John Dela Cluz</td><td>May 15, 2022</td><td><span class="status-pill status-good">Good</span></td></tr>
-              <tr><td>Jose Ramos</td><td>March 22, 2022</td><td><span class="status-pill status-expired">Expired</span></td></tr>
-              <tr><td>Regie Santos</td><td>April 10, 2022</td><td><span class="status-pill status-good">Good</span></td></tr>
-              <tr><td>Marlon Reyes</td><td>June 05, 2021</td><td><span class="status-pill status-expired">Expired</span></td></tr>
-              <tr><td>Anna Villleumana</td><td>July 18, 2022</td><td><span class="status-pill status-good">Good</span></td></tr>
+            <tbody id="driverRenewalsBody">
             </tbody>
           </table>
         </div>
@@ -710,25 +705,25 @@
       <div class="panel">
         <h2>Renewal Overview</h2>
         <div class="donut-wrap">
-          <div class="donut"></div>
+          <div class="donut" id="renewalDonut"></div>
           <div class="legend">
-            <div class="legend-row"><span class="dot green"></span>Good</div>
-            <div class="legend-row"><span class="dot yellow"></span>Expiring Soon</div>
+            <div class="legend-row"><span class="dot green"></span>Active</div>
+            <div class="legend-row"><span class="dot yellow"></span>Pending Renewal</div>
             <div class="legend-row"><span class="dot red"></span>Expired</div>
           </div>
         </div>
         <div class="summary-list">
           <div class="summary-row">
             <div class="left"><span class="dot green"></span>Active Renewals:</div>
-            <div class="value">80</div>
+            <div class="value" id="summaryActive">0</div>
           </div>
           <div class="summary-row">
             <div class="left"><span class="dot yellow"></span>Expiring Soon</div>
-            <div class="value">20</div>
+            <div class="value" id="summaryPending">0</div>
           </div>
           <div class="summary-row">
             <div class="left"><span class="dot red"></span>Expired Licenses:</div>
-            <div class="value">15</div>
+            <div class="value" id="summaryExpired">0</div>
           </div>
         </div>
       </div>
@@ -742,7 +737,7 @@
         </div>
         <div>
           <h3>Franchises</h3>
-          <div class="mini-value">25 Active / 5 Expired</div>
+          <div class="mini-value" id="franchiseSummary">0 Active / 0 Expired</div>
         </div>
       </div>
 
@@ -752,7 +747,7 @@
         </div>
         <div>
           <h3>Tricycles</h3>
-          <div class="mini-value">80</div>
+          <div class="mini-value" id="tricycleSummary">0</div>
         </div>
       </div>
 
@@ -763,9 +758,7 @@
           </div>
           <h3>Recent Notifications</h3>
         </div>
-        <div class="notif-item">🟡 License Renewal Expiring Soon for&nbsp;<b>&nbsp;Jose Ramos</b></div>
-        <div class="notif-item">✅ Vehicle Maintenance Reminder</div>
-        <div class="notif-item">✅ Insurance Policy Renewal Due</div>
+        <div id="notificationList"></div>
         <div class="notif-footer">
           <button class="view-all-btn">View All</button>
         </div>
@@ -789,7 +782,7 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
     Tricycles
   </a>
-  <a href="add_franchise.html" class="bn-item">
+  <a href="franchise_management.html" class="bn-item">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
     Renewals
   </a>
@@ -819,6 +812,58 @@
 
   hamburgerBtn.addEventListener('click', openDrawer);
   overlay.addEventListener('click', closeDrawer);
+
+  const dashboardApi = '../controllers/dashboard.php';
+
+  function updateRenewalDonut(overview) {
+    const total = overview.active + overview.pending + overview.expired;
+    const activeEnd = total ? overview.active / total * 100 : 0;
+    const pendingEnd = total ? (overview.active + overview.pending) / total * 100 : 0;
+    document.getElementById('renewalDonut').style.background = total
+      ? `conic-gradient(var(--green) 0% ${activeEnd}%, var(--yellow) ${activeEnd}% ${pendingEnd}%, var(--red) ${pendingEnd}% 100%)`
+      : 'conic-gradient(var(--border-gray) 0% 100%)';
+  }
+
+  function driverStatusLabel(status) {
+    if (status === 'Approved') return 'Good';
+    if (status === 'Pending') return 'Pending';
+    return 'For Review';
+  }
+
+  async function loadDashboard() {
+    const response = await fetch(dashboardApi);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load dashboard.');
+
+    const stats = result.stats;
+    document.getElementById('statTotalDrivers').textContent = stats.totalDrivers;
+    document.getElementById('statActiveDrivers').textContent = stats.activeDrivers;
+    document.getElementById('statInactiveDrivers').textContent = stats.inactiveDrivers;
+    document.getElementById('statPendingLicenses').textContent = stats.pendingLicenses;
+    document.getElementById('summaryActive').textContent = result.renewalOverview.active;
+    document.getElementById('summaryPending').textContent = result.renewalOverview.pending;
+    document.getElementById('summaryExpired').textContent = result.renewalOverview.expired;
+    updateRenewalDonut(result.renewalOverview);
+    document.getElementById('franchiseSummary').textContent = `${stats.activeFranchises} Active / ${stats.expiredFranchises} Expired`;
+    document.getElementById('tricycleSummary').textContent = stats.totalTricycles;
+
+    const driverBody = document.getElementById('driverRenewalsBody');
+    driverBody.innerHTML = result.driverRenewals.length ? result.driverRenewals.map(driver => `
+      <tr><td>${driver.name}</td><td>Not tracked</td><td><span class="status-pill ${driver.status === 'Approved' ? 'status-good' : 'status-expired'}">${driverStatusLabel(driver.status)}</span></td></tr>
+    `).join('') : '<tr><td colspan="3">No drivers found</td></tr>';
+
+    const notificationList = document.getElementById('notificationList');
+    notificationList.innerHTML = result.notifications.length ? result.notifications.map(notification => `
+      <div class="notif-item"><b>${notification.title || 'Notification'}</b>${notification.message ? `: ${notification.message}` : ''}</div>
+    `).join('') : '<div class="notif-item">No notifications</div>';
+  }
+
+  loadDashboard().catch(error => {
+    document.getElementById('notificationList').innerHTML = `<div class="notif-item">${error.message}</div>`;
+  });
+  setInterval(() => {
+    if (!document.hidden) loadDashboard().catch(() => {});
+  }, 15000);
 </script>
 
 </body>

@@ -664,7 +664,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
         Tricycle Management
       </a></li>
-      <li><a href="add_franchise.html" class="nav-link">
+      <li><a href="franchise_management.html" class="nav-link">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Franchise Management
       </a></li>
@@ -950,19 +950,38 @@
   hamburgerBtn.addEventListener('click', openDrawer);
   overlay.addEventListener('click', closeDrawer);
 
-  /* ---------- data (mirrors `tricycles` + `franchise_tricycle` + `driver_tricycle` tables) ---------- */
+  /* ---------- data loaded from the tricycle and assignment tables ---------- */
   const colorMap = { Red: '#E5484D', Blue: '#2456C7', Black: '#1B2A4A', White: '#E7E9EC', Green: '#2E9E4F', Yellow: '#F2B90F', Silver: '#B9BEC7', Maroon: '#7A1F2B' };
+  const tricycleApi = '../controllers/tricycle_management.php';
+  let tricycles = [];
 
-  let tricycles = [
-    { id: 1, brand: "Honda TMX155", plate: "ABC-1234", engine: "ENG-88291", chassis: "CHS-73920", color: "Red", franchise: "Santos Franchise", driver: "Juan Dela Cruz" },
-    { id: 2, brand: "Kawasaki Bajaj", plate: "DEF-5678", engine: "ENG-45102", chassis: "CHS-19284", color: "Blue", franchise: "Reyes Franchise", driver: "Jose Ramos" },
-    { id: 3, brand: "Honda TMX155", plate: "GHI-9012", engine: "ENG-77534", chassis: "CHS-66210", color: "Black", franchise: "Bautista Franchise", driver: "Marlon Reyes" },
-    { id: 4, brand: "Yamaha YT115", plate: "JKL-3456", engine: "ENG-30987", chassis: "CHS-52017", color: "Green", franchise: "Mendoza Franchise", driver: "Carlo Mendoza" },
-    { id: 5, brand: "Kawasaki Bajaj", plate: "MNO-7890", engine: "ENG-91045", chassis: "CHS-84331", color: "Yellow", franchise: "Fernandez Franchise", driver: "" },
-    { id: 6, brand: "Honda TMX155", plate: "PQR-2345", engine: "ENG-56412", chassis: "CHS-27650", color: "Silver", franchise: "", driver: "" },
-    { id: 7, brand: "Yamaha YT115", plate: "STU-6789", engine: "ENG-64328", chassis: "CHS-91573", color: "Maroon", franchise: "", driver: "" },
-    { id: 8, brand: "Kawasaki Bajaj", plate: "VWX-0123", engine: "ENG-12876", chassis: "CHS-38294", color: "White", franchise: "", driver: "" }
-  ];
+  async function apiRequest(payload = null) {
+    const options = payload ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) } : {};
+    const response = await fetch(tricycleApi, options);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
+    return result;
+  }
+
+  function populateAssignmentOptions(result) {
+    const driverSelect = document.getElementById('fDriver');
+    const franchiseSelect = document.getElementById('fFranchise');
+    driverSelect.innerHTML = '<option value="">Unassigned</option>' + result.drivers.map(d => `<option value="${d.driver_id}">${d.full_name}</option>`).join('');
+    franchiseSelect.innerHTML = '<option value="">Unassigned</option>' + result.franchises.map(f => `<option value="${f.franchise_id}">${f.franchise_name}</option>`).join('');
+  }
+
+  async function loadTricycles() {
+    try {
+      const result = await apiRequest();
+      tricycles = result.tricycles;
+      populateAssignmentOptions(result);
+      updateStats();
+      render();
+    } catch (error) {
+      emptyState.classList.remove('hidden');
+      emptyState.querySelector('div').textContent = error.message;
+    }
+  }
 
   const tableBody = document.getElementById('trikeTableBody');
   const emptyState = document.getElementById('emptyState');
@@ -1078,8 +1097,8 @@
     document.getElementById('fEngine').value = t.engine;
     document.getElementById('fChassis').value = t.chassis;
     document.getElementById('fColor').value = t.color;
-    document.getElementById('fFranchise').value = t.franchise;
-    document.getElementById('fDriver').value = t.driver;
+    document.getElementById('fFranchise').value = t.franchiseId || '';
+    document.getElementById('fDriver').value = t.driverId || '';
     trikeModalOverlay.classList.add('open');
   }
 
@@ -1090,7 +1109,7 @@
   document.getElementById('trikeCancelBtn').addEventListener('click', closeTrikeModal);
   trikeModalOverlay.addEventListener('click', (e) => { if (e.target === trikeModalOverlay) closeTrikeModal(); });
 
-  trikeForm.addEventListener('submit', (e) => {
+  trikeForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
       brand: document.getElementById('fBrand').value.trim(),
@@ -1098,21 +1117,17 @@
       engine: document.getElementById('fEngine').value.trim(),
       chassis: document.getElementById('fChassis').value.trim(),
       color: document.getElementById('fColor').value.trim(),
-      franchise: document.getElementById('fFranchise').value,
-      driver: document.getElementById('fDriver').value
+      franchise_id: document.getElementById('fFranchise').value || null,
+      driver_id: document.getElementById('fDriver').value || null
     };
 
-    if (editingId) {
-      const t = tricycles.find(x => x.id === editingId);
-      Object.assign(t, payload);
-    } else {
-      const newId = Math.max(...tricycles.map(t => t.id)) + 1;
-      tricycles.push({ id: newId, ...payload });
+    try {
+      await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
+      await loadTricycles();
+      closeTrikeModal();
+    } catch (error) {
+      alert(error.message);
     }
-
-    updateStats();
-    render();
-    closeTrikeModal();
   });
 
   /* ---------- view modal ---------- */
@@ -1155,18 +1170,20 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
     if (deletingId != null) {
-      tricycles = tricycles.filter(t => t.id !== deletingId);
-      updateStats();
-      render();
+      try {
+        await apiRequest({ action: 'delete', id: deletingId });
+        await loadTricycles();
+      } catch (error) {
+        alert(error.message);
+      }
     }
     closeDeleteModal();
   });
 
   /* ---------- init ---------- */
-  updateStats();
-  render();
+  loadTricycles();
 </script>
 
 </body>
