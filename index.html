@@ -222,7 +222,9 @@
       alertBox.className = 'alert';
       alertBox.textContent = error === 'missing'
         ? 'Please enter your email or username and password.'
-        : 'Invalid email/username or password.';
+        : error === 'restricted'
+          ? 'This account is not authorized for the Super Admin portal.'
+          : 'Invalid email/username or password.';
       form.insertBefore(alertBox, form.firstChild);
     }
   </script>

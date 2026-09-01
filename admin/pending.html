@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tricycle Franchise — Pending Registrations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/pending.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      Reina Mercedes TODA Management System
+    </div>
+    <ul class="nav-list">
+      <li><a href="dashboard.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Dashboard
+      </a></li>
+      <li><a href="driver_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Driver Management
+      </a></li>
+      <li><a href="tricycle_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
+        Tricycle Management
+      </a></li>
+      <li><a href="franchise_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Franchise Management
+      </a></li>
+      <li><a href="pending.html" class="nav-link active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Pending Registrations
+        <span class="nav-badge" id="navBadge">0</span>
+      </a></li>
+      <li><a href="renewals.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
+        Renewals
+      </a></li>
+      <li><a href="notification.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+        <span class="nav-badge notification-count">0</span>
+      </a></li>
+      <li><a href="account_manager.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Account Management
+      </a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="../index.html" class="logout-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <main class="main">
+
+    <div class="topbar">
+      <h1>Pending Registrations</h1>
+      <div class="admin-pill" aria-label="Current user">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+
+    <div class="mobile-topbar">
+      <div class="left">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1>Pending Registrations</h1>
+      </div>
+      <div class="mobile-admin" aria-label="Current user">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Franchises with Pending Requests</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statFranchises">4</div>
+          <div class="icon-badge blue-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Pending Requests</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statPending">9</div>
+          <div class="icon-badge yellow-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Approved</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statApproved">3</div>
+          <div class="icon-badge green-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Denied</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statDenied">1</div>
+          <div class="icon-badge red-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="All">All</button>
+        <button class="filter-tab" data-filter="Tricycle Addition">Tricycle Addition <span class="tab-count" id="countTricycle">0</span></button>
+        <button class="filter-tab" data-filter="Driver Addition">Driver Addition <span class="tab-count" id="countDriver">0</span></button>
+        <button class="filter-tab" data-filter="Renewal Submission">Renewal Submission <span class="tab-count" id="countRenewal">0</span></button>
+        <button class="filter-tab" data-filter="Franchise Application">Franchise Application <span class="tab-count" id="countFranchise">0</span></button>
+      </div>
+      <div class="toolbar-right">
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search by franchise or owner name...">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Franchises with Pending Requests</h2>
+        <div class="result-count" id="resultCount">4 franchises</div>
+      </div>
+      <div class="table-scroll">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th>Franchise</th>
+              <th>Owner</th>
+              <th>Request Types</th>
+              <th>Pending</th>
+              <th>Latest Submission</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="franchiseTableBody">
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state hidden" id="emptyState">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <div>No franchises with pending requests match your search or filter.</div>
+      </div>
+      <div class="pagination">
+        <div class="page-info" id="pageInfo">Showing 4 of 4 franchises</div>
+        <div class="page-btns">
+          <button class="page-btn active">1</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<nav class="bottom-nav">
+  <a href="dashboard.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Dashboard
+  </a>
+  <a href="driver_management.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Drivers
+  </a>
+  <a href="tricycle_management.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
+    Tricycles
+  </a>
+  <a href="pending.html" class="bn-item active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Pending Registrations
+    <span class="bn-badge" id="bnBadge">0</span>
+  </a>
+  <a href="renewals.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
+    Renewals
+  </a>
+</nav>
+
+<div class="fs-modal-overlay" id="fsModalOverlay">
+  <div class="fs-modal">
+    <div class="fs-modal-header">
+      <div class="fs-header-left">
+        <div class="fs-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div>
+          <div class="fs-header-title" id="fsFranchiseName">Franchise Name</div>
+          <div class="fs-header-sub" id="fsFranchiseSub">Owner · Contact</div>
+        </div>
+      </div>
+      <button class="fs-modal-close" id="fsModalClose" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fs-toolbar">
+      <div class="fs-toolbar-count" id="fsToolbarCount">0 pending <span>· 0 total requests</span></div>
+      <button class="approve-all-btn" id="approveAllBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Approve All Pending
+      </button>
+    </div>
+    <div class="fs-modal-body" id="fsModalBody">
+    </div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button class="lightbox-close" id="lightboxCloseBtn" aria-label="Close">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <img id="lightboxImg" src="" alt="Document">
+</div>
+
+  <script src="js/pending.js"></script>
+</body>
+</html>

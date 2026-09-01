@@ -1,0 +1,21 @@
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #f4f6f9;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #16283d;
+    }
+    .redirect-box {
+      text-align: center;
+      padding: 24px 32px;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 10px 24px rgba(10,37,64,0.08);
+    }
+  

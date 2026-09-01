@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tricycle Franchise — Notifications</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/notification.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      Reina Mercedes TODA Management System
+    </div>
+    <ul class="nav-list">
+      <li><a href="dashboard.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Dashboard
+      </a></li>
+      <li><a href="driver_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Driver Management
+      </a></li>
+      <li><a href="tricycle_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
+        Tricycle Management
+      </a></li>
+      <li><a href="franchise_management.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Franchise Management
+      </a></li>
+      <li><a href="pending.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Pending Registrations
+        <span class="nav-badge" id="navBadge">0</span>
+      </a></li>
+      <li><a href="renewals.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
+        Renewals
+      </a></li>
+      <li><a href="notification.html" class="nav-link active">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+        <span class="nav-badge notification-count">0</span>
+      </a></li>
+      <li><a href="account_manager.html" class="nav-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        Account Management
+      </a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <a href="../controllers/logout.php" class="logout-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- desktop topbar -->
+    <div class="topbar">
+      <h1>Notifications</h1>
+      <div class="admin-pill" aria-label="Current user">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+
+    <!-- mobile topbar -->
+    <div class="mobile-topbar">
+      <div class="left">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1>Notifications</h1>
+      </div>
+      <div class="mobile-admin" aria-label="Current user">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+    </div>
+
+    <!-- stat cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Alerts</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statTotal">8</div>
+          <div class="icon-badge blue-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unread</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statUnread">5</div>
+          <div class="icon-badge red-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Urgent</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statUrgent">3</div>
+          <div class="icon-badge red-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Upcoming</div>
+        <div class="stat-row">
+          <div class="stat-value" id="statWarning">3</div>
+          <div class="icon-badge yellow-bg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- toolbar: filters + search + mark all read -->
+    <div class="toolbar">
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="All">All <span class="tab-count" id="countAll">8</span></button>
+        <button class="filter-tab" data-filter="Unread">Unread <span class="tab-count" id="countUnread">5</span></button>
+        <button class="filter-tab" data-filter="Admin">Login Alerts <span class="tab-count" id="countAdmin">0</span></button>
+        <button class="filter-tab" data-filter="Renewal">Renewals <span class="tab-count" id="countRenewal">0</span></button>
+        <button class="filter-tab" data-filter="Franchise">Franchise <span class="tab-count" id="countFranchise">0</span></button>
+        <button class="filter-tab" data-filter="Tricycle">Tricycle <span class="tab-count" id="countTricycle">0</span></button>
+        <button class="filter-tab" data-filter="Driver">Driver <span class="tab-count" id="countDriver">0</span></button>
+      </div>
+      <div class="toolbar-right">
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Search notifications...">
+        </div>
+        <button class="mark-all-btn" id="markAllBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Mark All as Read
+        </button>
+      </div>
+    </div>
+
+    <!-- notifications list -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Recent Alerts</h2>
+        <div class="result-count" id="resultCount">8 notifications</div>
+      </div>
+      <div class="notif-list" id="notifList">
+        <!-- items injected by JS -->
+      </div>
+      <div class="empty-state hidden" id="emptyState">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div>No notifications match your search or filter.</div>
+      </div>
+      <div class="pagination">
+        <div class="page-info" id="pageInfo">Showing 8 of 8 notifications</div>
+        <div class="page-btns">
+          <button class="page-btn active">1</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- mobile bottom nav -->
+<nav class="bottom-nav">
+  <a href="dashboard.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Dashboard
+  </a>
+  <a href="driver_management.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Drivers
+  </a>
+  <a href="tricycle_management.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h6l3-8h4"/><path d="M9 9h4l2 8"/><path d="M9 9V6h3"/></svg>
+    Tricycles
+  </a>
+  <a href="pending.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2-2V5a2 2 1 0 0 1 2-2h11"/></svg>
+    Pending Registrations
+  </a>
+  <a href="franchise_management.html" class="bn-item">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Franchise
+  </a>
+  <a href="notification.html" class="bn-item active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    Alerts
+    <span class="bn-badge" id="bnBadge">0</span>
+  </a>
+</nav>
+
+  <script src="js/notification.js"></script>
+</body>
+</html>

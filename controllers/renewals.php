@@ -5,6 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 $modelsPath = __DIR__ . '/../models';
 set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
 require_once $modelsPath . '/functions.php';
+require_once $modelsPath . '/notifications.php';
+require_once $modelsPath . '/notification_triggers.php';
 require_once $modelsPath . '/upload.php';
 
 function respond($payload, $status = 200)
@@ -20,36 +22,43 @@ function requestData()
 	return is_array($data) ? $data : $_POST;
 }
 
+function ensureRenewalStatusSchema()
+{
+	global $conn;
+	$check = mysqli_query($conn, "SHOW COLUMNS FROM renewals LIKE 'receipt_status'");
+	$column = $check ? mysqli_fetch_assoc($check) : null;
+	if ($column && strpos((string) ($column['Type'] ?? ''), "'Rejected'") === false) {
+		mysqli_query($conn, "ALTER TABLE renewals MODIFY receipt_status ENUM('Not Submitted','Submitted','Confirmed','Rejected') DEFAULT 'Not Submitted'");
+	}
+}
+
 function renewalPayload($data)
 {
 	$franchiseId = filter_var($data['franchise_id'] ?? null, FILTER_VALIDATE_INT);
-	$year = filter_var($data['year'] ?? $data['renewal_year'] ?? null, FILTER_VALIDATE_INT);
-	$status = $data['status'] ?? $data['receipt_status'] ?? 'Not Submitted';
-	$renewalDate = $data['renewalDate'] ?? $data['renewal_date'] ?? '';
-	$dueDate = $data['dueDate'] ?? $data['due_date'] ?? '';
-	if (!$franchiseId || !$year || $year < 2000 || !$renewalDate || !$dueDate) {
-		respond(['success' => false, 'message' => 'Franchise, year, renewal date, and due date are required.'], 422);
-	}
-	if (!in_array($status, ['Not Submitted', 'Submitted', 'Confirmed'], true)) {
-		respond(['success' => false, 'message' => 'Please select a valid receipt status.'], 422);
-	}
-	if (!getRecord('franchises', 'franchise_id = ?', [$franchiseId])) {
+	$franchise = $franchiseId ? getRecord('franchises', 'franchise_id = ?', [$franchiseId]) : null;
+	if (!$franchise) {
 		respond(['success' => false, 'message' => 'Selected franchise not found.'], 422);
 	}
+	$expiryYear = !empty($franchise['expiry_date']) ? (int) date('Y', strtotime($franchise['expiry_date'])) : 0;
+	$year = max((int) date('Y'), $expiryYear);
+	$renewalDate = $year . '-01-01';
+	$dueDate = ($year + 1) . '-01-01';
 
 	return [
 		'franchise_id' => $franchiseId,
 		'renewal_year' => $year,
 		'renewal_date' => $renewalDate,
 		'due_date' => $dueDate,
-		'penalty' => max(0, (float) ($data['penalty'] ?? 0)),
-		'remarks' => trim($data['remarks'] ?? ''),
-		'receipt_status' => $status
+		'receipt_status' => 'Submitted',
+		'receipt_confirmed_at' => null,
+		'receipt_confirmed_by' => null,
+		'franchise' => $franchise
 	];
 }
 
 function listRenewals()
 {
+	ensureRenewalStatusSchema();
 	$renewals = getAllRecords('renewals', 'ORDER BY renewal_id DESC');
 	$franchises = getAllRecords('franchises', 'ORDER BY franchise_name');
 	$admins = getAllRecords('admins');
@@ -64,15 +73,11 @@ function listRenewals()
 			'franchiseId' => (int) $renewal['franchise_id'],
 			'franchise' => $franchiseNames[(int) $renewal['franchise_id']] ?? 'Unknown franchise',
 			'year' => (int) $renewal['renewal_year'],
-			'renewalDate' => $renewal['renewal_date'],
-			'dueDate' => $renewal['due_date'],
-			'penalty' => (float) $renewal['penalty'],
-			'remarks' => $renewal['remarks'] ?? '',
 			'status' => $renewal['receipt_status'],
 			'receipt' => $renewal['receipt_photo'] ? basename($renewal['receipt_photo']) : '',
 			'receiptDataUrl' => uploadUrl($renewal['receipt_photo']),
 			'receiptSubmittedAt' => $renewal['receipt_submitted_at'] ?? '',
-			'uploadedBy' => $renewal['receipt_photo'] ? 'Admin' : '',
+			'uploadedBy' => $renewal['receipt_photo'] ? ($renewal['receipt_submitted_at'] ? 'Rider' : 'Admin') : '',
 			'confirmedBy' => $adminNames[(int) ($renewal['receipt_confirmed_by'] ?? 0)] ?? '',
 			'confirmedAt' => $renewal['receipt_confirmed_at'] ?? ''
 		];
@@ -82,6 +87,7 @@ function listRenewals()
 }
 
 try {
+	ensureRenewalStatusSchema();
 	if ($_SERVER['REQUEST_METHOD'] === 'GET') listRenewals();
 	$data = requestData();
 	$action = $data['action'] ?? '';
@@ -89,14 +95,20 @@ try {
 
 	if ($action === 'create') {
 		$payload = renewalPayload($data);
+		unset($payload['franchise']);
+		$payload['receipt_status'] = 'Submitted';
+		$payload['receipt_confirmed_at'] = null;
+		$payload['receipt_confirmed_by'] = null;
 		$payload['receipt_photo'] = saveDataUrlUpload($data['receiptDataUrl'] ?? '', 'receipt');
 		if ($payload['receipt_photo']) $payload['receipt_submitted_at'] = date('Y-m-d H:i:s');
-		respond(['success' => true, 'id' => insertSomething('renewals', $payload)], 201);
+		$id = insertSomething('renewals', $payload);
+		respond(['success' => true, 'id' => $id], 201);
 	}
 	if ($action === 'update' && $id) {
 		$existing = getRecord('renewals', 'renewal_id = ?', [$id]);
 		if (!$existing) respond(['success' => false, 'message' => 'Renewal not found.'], 404);
 		$payload = renewalPayload($data);
+		unset($payload['franchise']);
 		$receipt = saveDataUrlUpload($data['receiptDataUrl'] ?? '', 'receipt', $existing['receipt_photo']);
 		if ($receipt) {
 			$payload['receipt_photo'] = $receipt;
@@ -106,9 +118,47 @@ try {
 		respond(['success' => true]);
 	}
 	if ($action === 'confirm' && $id) {
-		if (!getRecord('renewals', 'renewal_id = ?', [$id])) respond(['success' => false, 'message' => 'Renewal not found.'], 404);
+		$renewal = getRecord('renewals', 'renewal_id = ?', [$id]);
+		if (!$renewal) respond(['success' => false, 'message' => 'Renewal not found.'], 404);
 		$confirmedBy = $_SESSION['admin_id'] ?? null;
 		updateRecord('renewals', ['receipt_status' => 'Confirmed', 'receipt_confirmed_at' => date('Y-m-d H:i:s'), 'receipt_confirmed_by' => $confirmedBy], 'renewal_id = ?', [$id]);
+		updateRecord('franchises', [
+			'issue_date' => $renewal['renewal_date'],
+			'expiry_date' => $renewal['due_date'],
+			'renewal_status' => 'Active'
+		], 'franchise_id = ?', [$renewal['franchise_id']]);
+		$franchise = getRecord('franchises', 'franchise_id = ?', [(int) $renewal['franchise_id']]);
+		if ($franchise) {
+			createNotification(
+				'Renewal Approved',
+				"Your renewal for {$franchise['franchise_name']} has been approved. Your franchise is active through {$renewal['due_date']}.",
+				'Renewal',
+				'info',
+				$franchise['owner_email'] ?? '',
+				$id,
+				'renewal_decision'
+			);
+		}
+		respond(['success' => true]);
+	}
+	if ($action === 'reject' && $id) {
+		$renewal = getRecord('renewals', 'renewal_id = ? AND receipt_status = ?', [$id, 'Submitted']);
+		if (!$renewal) respond(['success' => false, 'message' => 'Submitted renewal not found.'], 404);
+		$confirmedBy = $_SESSION['admin_id'] ?? null;
+		updateRecord('renewals', ['receipt_status' => 'Rejected', 'receipt_confirmed_at' => date('Y-m-d H:i:s'), 'receipt_confirmed_by' => $confirmedBy], 'renewal_id = ?', [$id]);
+		$franchise = getRecord('franchises', 'franchise_id = ?', [(int) $renewal['franchise_id']]);
+		$reason = trim($data['reason'] ?? 'Please contact the admin team for assistance.');
+		if ($franchise) {
+			createNotification(
+				'Renewal Requires Attention',
+				"Your renewal for {$franchise['franchise_name']} was not approved. {$reason}",
+				'Renewal',
+				'urgent',
+				$franchise['owner_email'] ?? '',
+				$id,
+				'renewal_decision'
+			);
+		}
 		respond(['success' => true]);
 	}
 	if ($action === 'delete' && $id) {

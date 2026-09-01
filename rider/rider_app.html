@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Franchise Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../rider/css/rider_app.css">
+
+
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login-screen" id="login-screen">
+
+  <div class="login-photo" aria-hidden="true">
+    <svg viewBox="0 0 700 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <rect width="700" height="900" fill="#C7D6E4"/>
+      <circle cx="120" cy="150" r="90" fill="#ffffff" opacity="0.25"/>
+      <circle cx="560" cy="230" r="60" fill="#ffffff" opacity="0.18"/>
+      <g opacity="0.35" fill="#5B6B7C">
+        <rect x="60" y="330" width="70" height="260" rx="4"/>
+        <rect x="150" y="270" width="55" height="320" rx="4"/>
+        <rect x="225" y="360" width="90" height="230" rx="4"/>
+        <rect x="470" y="300" width="60" height="290" rx="4"/>
+        <rect x="545" y="350" width="80" height="240" rx="4"/>
+        <rect x="335" y="380" width="50" height="210" rx="4"/>
+      </g>
+      <rect x="0" y="590" width="700" height="310" fill="#8A97A3"/>
+      <rect x="0" y="590" width="700" height="10" fill="#9FACB8"/>
+      <g opacity="0.5" stroke="#E7ECF1" stroke-width="6" stroke-dasharray="26 22">
+        <line x1="0" y1="700" x2="700" y2="700"/>
+      </g>
+
+      <!-- tricycle illustration -->
+      <g transform="translate(130,560)">
+        <ellipse cx="120" cy="220" rx="190" ry="26" fill="#0A2540" opacity="0.15"/>
+        <!-- sidecar roof -->
+        <path d="M-20 40 L40 -55 L215 -55 L235 40 Z" fill="#D9A441"/>
+        <path d="M-10 40 L45 -45 L210 -45 L228 40 Z" fill="#C08A2E"/>
+        <!-- cabin body -->
+        <rect x="-15" y="40" width="255" height="105" rx="14" fill="#123A63"/>
+        <rect x="10" y="55" width="70" height="55" rx="6" fill="#BFD4E8"/>
+        <rect x="95" y="55" width="70" height="55" rx="6" fill="#BFD4E8"/>
+        <rect x="10" y="120" width="220" height="14" rx="4" fill="#0F3159"/>
+        <!-- plate -->
+        <rect x="30" y="150" width="90" height="34" rx="4" fill="#F4F6F9"/>
+        <text x="75" y="174" font-family="Poppins, sans-serif" font-size="18" font-weight="700" fill="#0A2540" text-anchor="middle">1234</text>
+        <!-- front motorbike section -->
+        <path d="M228 90 L300 90 L330 130 L300 170 L235 170 L215 130 Z" fill="#123A63"/>
+        <circle cx="300" cy="45" r="10" fill="#D9A441"/>
+        <rect x="292" y="45" width="60" height="8" rx="4" fill="#0F3159" transform="rotate(-12 292 49)"/>
+        <!-- wheels -->
+        <circle cx="30" cy="205" r="42" fill="#16283D"/>
+        <circle cx="30" cy="205" r="16" fill="#8AA0B8"/>
+        <circle cx="210" cy="205" r="42" fill="#16283D"/>
+        <circle cx="210" cy="205" r="16" fill="#8AA0B8"/>
+        <circle cx="330" cy="140" r="34" fill="#16283D"/>
+        <circle cx="330" cy="140" r="13" fill="#8AA0B8"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="login-panel">
+    <div class="login-wrap">
+
+      <div class="login-heading">
+        <h2>Welcome Back!</h2>
+        <p>Please sign in to your Franchise Manager account.</p>
+      </div>
+
+      <form id="login-form" novalidate>
+        <div class="login-error" id="login-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span id="login-error-msg">Please enter both your username and password.</span>
+        </div>
+
+        <div class="login-field">
+          <label for="login-username">Email Address / Username</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <input type="text" id="login-username" placeholder="Enter your email or username" autocomplete="username">
+          </div>
+        </div>
+
+        <div class="login-field">
+          <label for="login-password">Password</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+            <button type="button" class="login-eye" id="login-toggle-pw" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="login-row">
+          <button type="button" class="login-forgot" id="login-forgot">Forgot Password?</button>
+        </div>
+
+        <button type="submit" class="login-submit">Sign In</button>
+      </form>
+
+      <div class="login-row">
+        <button type="button" class="login-forgot" id="show-rider-register">Create rider account</button>
+      </div>
+
+      <form id="rider-register-form" class="rider-hidden" novalidate>
+        <div class="login-field">
+          <label for="register-name">Full Name</label>
+          <div class="login-input-group"><input type="text" id="register-name" placeholder="Enter your full name" autocomplete="name"></div>
+        </div>
+        <div class="login-field">
+          <label for="register-email">Email Address</label>
+          <div class="login-input-group"><input type="email" id="register-email" placeholder="Enter your email address" autocomplete="email"></div>
+        </div>
+        <div class="login-field">
+          <label for="register-password">Password</label>
+          <div class="login-input-group"><input type="password" id="register-password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+        </div>
+        <button type="submit" class="login-submit">Create Account</button>
+        <div class="login-row"><button type="button" class="login-forgot" id="show-rider-login">Back to sign in</button></div>
+      </form>
+
+      <div class="login-footer">
+        <p>Tricycle Franchise Management System</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="app" class="rider-hidden">
+
+
+  <!-- ============ BOTTOM / SIDE NAV ============ -->
+  <nav class="bottom-nav" aria-label="Primary">
+    <button class="nav-btn is-active" data-nav="franchise" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1v-9"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" data-nav="drivers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      <span>Drivers</span>
+    </button>
+    <button class="nav-btn" data-nav="renew">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+      <span>Renew</span>
+    </button>
+    <button class="nav-btn" data-nav="notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span>Alerts</span>
+      <span class="nbadge">3</span>
+    </button>
+    <button class="nav-btn" data-nav="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      <span>Profile</span>
+    </button>
+  </nav>
+
+  <div class="main-col">
+
+  <!-- ============ HOME / FRANCHISE (default) ============ -->
+  <section class="screen active" id="screen-franchise">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <p class="eyebrow" id="franchise-topbar-eyebrow">Franchise</p>
+          <h1 id="franchise-topbar-name">Franchise Manager</h1>
+        </div>
+        <button class="icon-btn" aria-label="Notifications" data-nav="notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Registered franchise view -->
+    <div id="franchise-registered-view">
+      <div class="summary-card">
+        <div class="summary-top">
+          <div>
+            <div class="name" id="summary-franchise-name"></div>
+          </div>
+          <span class="badge approved" id="summary-franchise-status">Approved</span>
+        </div>
+        <div class="summary-grid">
+          <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">Tricycles</div></div>
+          <div class="stat inactive"><div class="num" id="stat-inactive">0</div><div class="lbl">Drivers</div></div>
+        </div>
+      </div>
+      <div class="application-status rider-hidden" id="pending-approval-banner" role="status">
+        <div class="application-status-label">Approval Status</div>
+        <div class="application-status-message" id="pending-approval-message">Waiting for approval.</div>
+      </div>
+      
+      <div class="application-status rider-hidden" id="franchise-application-status" role="status">
+        <div class="application-status-label">Application Status</div>
+        <div class="application-status-message" id="franchise-application-status-message"></div>
+      </div>
+
+      <div class="search-row">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="tricycle-search" placeholder="Search unit no., plate, driver...">
+        </div>
+        <button class="filter-btn" aria-label="Filter">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        </button>
+      </div>
+      <div class="chip-row" id="tricycle-filters">
+        <button class="chip is-active" data-filter="all">All Units</button>
+        <button class="chip" data-filter="Active">Active</button>
+        <button class="chip" data-filter="Inactive">Inactive</button>
+        <button class="chip" data-filter="Pending">Pending</button>
+        <button class="chip" data-filter="Expired">Expired</button>
+      </div>
+
+      <p class="section-label">Registered Tricycles</p>
+      <div class="list" id="tricycle-list"></div>
+
+      <button class="fab" id="fab-add-tricycle" aria-label="Add Tricycle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <!-- No franchise registered view -->
+    <div id="franchise-empty-view" class="rider-hidden">
+      <div class="empty-state franchise-empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 7l2-4h14l2 4"/><path d="M9 12h6"/></svg>
+        <p id="franchise-empty-title" class="franchise-empty-title">No Franchise Registered</p>
+        <p id="franchise-empty-message">You don't have a registered franchise yet. Register your franchise to start adding tricycles and drivers.</p>
+      </div>
+      <div class="container">
+        <button class="btn gold full-width-btn" id="btn-open-register-franchise">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          Register Franchise
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RENEW ============ -->
+  <section class="screen" id="screen-renew">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <p class="eyebrow">Renewal</p>
+          <h1>Renew Franchise</h1>
+        </div>
+        <button class="icon-btn" aria-label="Notifications" data-nav="notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="container renewal-container">
+      <form id="renewal-form" class="stack-form" novalidate>
+        <div class="field">
+          <label for="renewal-receipt">Payment Receipt Photo</label>
+          <input id="renewal-receipt" type="file" accept="image/*" required>
+        </div>
+        <button type="submit" class="btn gold full-width-btn">Apply Renewal</button>
+      </form>
+
+    
+    </div>
+  </section>
+
+  <!-- ============ DRIVERS ============ -->
+  <section class="screen" id="screen-drivers">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <p class="eyebrow">Driver Management</p>
+          <h1>Drivers</h1>
+        </div>
+        <button class="icon-btn" aria-label="Notifications" data-nav="notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="drivers-spacer"></div>
+    <div class="search-row">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="driver-search" placeholder="Search name or license no...">
+      </div>
+      <button class="filter-btn" aria-label="Filter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+      </button>
+    </div>
+    <div class="chip-row" id="driver-filters">
+      <button class="chip is-active" data-filter="all">All Drivers</button>
+      <button class="chip" data-filter="Active">Active</button>
+      <button class="chip" data-filter="Inactive">Inactive</button>
+      <button class="chip" data-filter="Pending">Pending</button>
+    </div>
+    <p class="section-label">Registered Drivers</p>
+    <div class="list" id="driver-list"></div>
+    <button class="fab" id="fab-add-driver" aria-label="Add Driver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- ============ NOTIFICATIONS ============ -->
+  <section class="screen" id="screen-notifications">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <p class="eyebrow">Stay Updated</p>
+          <h1>Notifications</h1>
+        </div>
+      </div>
+    </div>
+    <div class="container notification-list" id="notification-list"></div>
+  </section>
+
+  <!-- ============ PROFILE ============ -->
+  <section class="screen" id="screen-profile">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <p class="eyebrow">Account</p>
+          <h1>Profile</h1>
+        </div>
+      </div>
+    </div>
+    <div class="profile-hero">
+      <div class="summary-card profile-summary-card">
+        <div class="profile-avatar">R</div>
+        <div class="profile-name" id="profile-display-name">Rider</div>
+        <div class="profile-role" id="profile-display-role">Rider</div>
+      </div>
+    </div>
+    <div class="profile-list">
+      <button class="profile-row profile-settings-btn" id="open-account-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.6.7 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+        <span>Account Settings</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <button type="button" class="profile-row profile-action profile-logout" id="logout-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Log Out</span>
+      </button>
+    </div>
+  </section>
+
+  </div><!-- /main-col -->
+</div><!-- /app -->
+
+<!-- ============ TRICYCLE DETAIL (full screen) ============ -->
+<div class="detail-screen" id="detail-tricycle">
+  <div class="detail-header">
+    <div class="detail-header-row">
+      <button class="icon-btn" data-close="detail-tricycle" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Unit Details</h2>
+      <button class="icon-btn rider-hidden" id="td-more" aria-label="Edit pending submission">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+    <div class="detail-hero">
+      <div class="detail-hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"/><path d="M14 7v5h5"/></svg>
+      </div>
+      <div>
+        <div class="detail-hero-title" id="td-unit-no"></div>
+        <div class="detail-hero-sub" id="td-plate-sub"></div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="route">
+
+      <div class="section-block is-complete">
+        <div class="acc is-open" data-acc>
+          <button class="acc-head" data-acc-toggle>
+            <div class="acc-head-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2M5 17v2M13 17v2"/></svg>
+              <span class="acc-title">Vehicle Information</span>
+            </div>
+            <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acc-content"><div class="acc-inner" id="td-vehicle-fields"></div></div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="acc" data-acc>
+          <button class="acc-head" data-acc-toggle>
+            <div class="acc-head-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+              <span class="acc-title">Documents</span>
+            </div>
+            <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acc-content"><div class="acc-inner"><div class="doc-grid" id="td-documents"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ DRIVER DETAIL (full screen) ============ -->
+<div class="detail-screen" id="detail-driver">
+  <div class="detail-header">
+    <div class="detail-header-row">
+      <button class="icon-btn" data-close="detail-driver" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Driver Details</h2>
+      <button class="icon-btn" aria-label="More options">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+    <div class="detail-hero">
+      <div class="detail-hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </div>
+      <div>
+        <div class="detail-hero-title" id="dd-name"></div>
+        <div class="detail-hero-sub" id="dd-sub"></div>
+      </div>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="route">
+
+      <div class="section-block is-complete">
+        <div class="acc is-open" data-acc>
+          <button class="acc-head" data-acc-toggle>
+            <div class="acc-head-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+              <span class="acc-title">Personal Information</span>
+            </div>
+            <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acc-content"><div class="acc-inner" id="dd-personal-fields"></div></div>
+        </div>
+      </div>
+
+      <div class="section-block is-complete">
+        <div class="acc" data-acc>
+          <button class="acc-head" data-acc-toggle>
+            <div class="acc-head-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2M5 17v2M13 17v2"/></svg>
+              <span class="acc-title">Driver Information</span>
+            </div>
+            <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acc-content"><div class="acc-inner" id="dd-driver-fields"></div></div>
+        </div>
+      </div>
+
+      <div class="section-block is-warning">
+        <div class="acc" data-acc>
+          <button class="acc-head" data-acc-toggle>
+            <div class="acc-head-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+              <span class="acc-title">Required Documents</span>
+            </div>
+            <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="acc-content"><div class="acc-inner"><div class="doc-grid" id="dd-documents"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="action-bar">
+    <button class="btn secondary" data-close="detail-driver">Close</button>
+    <select id="dd-tricycle-select" class="detail-action-select rider-hidden" aria-label="Select tricycle to assign"></select>
+    <button class="btn primary rider-hidden" id="dd-assign-btn">Assign Tricycle</button>
+    <button class="btn primary rider-hidden" id="dd-edit-btn">Edit Driver</button>
+  </div>
+</div>
+
+<!-- ============ ADD DRIVER (full screen form) ============ -->
+<div class="detail-screen" id="screen-add-driver">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" data-close="screen-add-driver" aria-label="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2 id="driver-form-title">Add Driver</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="add-driver-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+          Personal Information
+        </div>
+        <div class="field"><label for="f-name">Full Name</label><input id="f-name" required placeholder="Enter full name"></div>
+        <div class="field-2col">
+          <div class="field"><label for="f-dob">Date of Birth</label><input id="f-dob" type="date" required></div>
+          <div class="field"><label for="f-contact">Contact Number</label><input id="f-contact" type="tel" required placeholder="09XX XXX XXXX"></div>
+        </div>
+        <div class="field"><label for="f-address">Address</label><textarea id="f-address" rows="2" placeholder="House no., street, barangay, city"></textarea></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2M5 17v2M13 17v2"/></svg>
+          Driver Information
+        </div>
+        <div class="field"><label for="f-license-exp">License Expiration</label><input id="f-license-exp" type="date" required></div>
+        <div class="field"><label for="f-tricycle">Assigned Tricycle</label>
+          <select id="f-tricycle">
+            <option value="">— Unassigned —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          Required Documents
+        </div>
+        <div id="upload-groups" class="upload-groups"></div>
+      </div>
+
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn gold full-width-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span id="driver-submit-label">Register Driver</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ ADD TRICYCLE (full screen form) ============ -->
+<div class="detail-screen" id="screen-add-tricycle">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" data-close="screen-add-tricycle" aria-label="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2 id="tricycle-form-title">Add Tricycle</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="add-tricycle-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2M5 17v2M13 17v2"/></svg>
+          Vehicle Information
+        </div>
+        <div class="field-2col">
+          <div class="field"><label for="t-brand">Brand</label><input id="t-brand" required placeholder="e.g. Honda TMX155"></div>
+          <div class="field"><label for="t-unit">Body Number / Sticker</label><input id="t-unit" required placeholder="e.g. BNS-045"></div>
+          <div class="field"><label for="t-plate">Plate Number</label><input id="t-plate" required placeholder="LMK-3452"></div>
+        </div>
+        <div class="field"><label for="t-engine">Engine Number</label><input id="t-engine" required placeholder="4G15-XXXXXX"></div>
+        <div class="field"><label for="t-chassis">Chassis Number</label><input id="t-chassis" required placeholder="CH-2026-XXXXX"></div>
+        <div class="field"><label for="t-color">Color</label><input id="t-color" required placeholder="e.g. Red"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+          Assignment &amp; Status
+        </div>
+        <div class="field"><label for="t-driver">Assigned Driver</label>
+          <select id="t-driver"><option value="">— Unassigned —</option></select>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          Required Documents
+        </div>
+        <div id="tricycle-upload-groups" class="upload-groups"></div>
+      </div>
+
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn gold full-width-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span id="tricycle-submit-label">Register Tricycle</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ REGISTER FRANCHISE (full screen form) ============ -->
+<div class="detail-screen register-overlay" id="screen-register-franchise">
+  <div class="register-modal">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" data-close="screen-register-franchise" aria-label="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Register Franchise</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="register-franchise-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"/><path d="M14 7v5h5"/></svg>
+          Franchise Information
+        </div>
+        <div class="field"><label for="rf-name">Franchise Name</label><input id="rf-name" required placeholder="e.g. Santos Franchise"></div>
+        <div class="field"><label for="rf-owner">Owner Name</label><input id="rf-owner" required placeholder="e.g. Ricardo Santos"></div>
+        <div class="field"><label for="rf-address">Address</label><textarea id="rf-address" rows="2" placeholder="Complete address"></textarea></div>
+        <div class="field-note">The franchise validity period is assigned by the LGU from January 1 through December 31 of the applicable year.</div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          Application / Payment Receipt
+        </div>
+        <input id="rf-receipt" type="file" accept="image/*" required>
+      </div>
+
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn gold full-width-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Save Franchise
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+
+<!-- ============ ACCOUNT SETTINGS (full screen form) ============ -->
+<div class="detail-screen" id="screen-account-settings">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" data-close="screen-account-settings" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Account Settings</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="account-settings-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+          Manager Details
+        </div>
+          <div class="field"><label for="as-name">Full Name</label><input id="as-name" required value=""></div>
+        <div class="field"><label for="as-role">Role / Position</label><input id="as-role" required value="Franchise Manager"></div>
+        <div class="field"><label for="as-franchise">Franchise / Terminal</label><input id="as-franchise" required value=""></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+          Contact
+        </div>
+        <div class="field"><label for="as-email">Email Address</label><input id="as-email" type="email" required value="migi.cruz@stacruzterminal.gov.ph"></div>
+        <div class="field"><label for="as-contact">Contact Number</label><input id="as-contact" type="tel" required value="0917 800 2214"></div>
+      </div>
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn gold full-width-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ FILTER SHEET ============ -->
+<div class="sheet-overlay" id="confirm-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="confirm-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/></svg>
+    </div>
+    <div class="sheet-title" id="confirm-title">Remove document?</div>
+    <div class="sheet-desc" id="confirm-desc">This will permanently remove the uploaded file. You can upload a new one afterward.</div>
+    <div class="confirm-actions">
+      <button class="btn secondary" id="confirm-cancel">Cancel</button>
+      <button class="btn danger" id="confirm-ok">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ IMAGE / DOCUMENT VIEWER ============ -->
+<div class="viewer" id="doc-viewer">
+  <div class="viewer-top">
+    <div>
+      <div class="vt-title" id="viewer-title">Driver's License</div>
+    </div>
+    <button class="icon-btn viewer-close" id="viewer-close" aria-label="Close viewer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="viewer-stage" id="viewer-stage">
+    <img id="viewer-img" src="" alt="Document preview">
+  </div>
+  <div class="viewer-bottom">
+    <button id="viewer-zoom-out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></svg></button>
+    <button id="viewer-reset" aria-label="Reset zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <button id="viewer-zoom-in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg></button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="toast-msg">Saved successfully</span>
+</div>
+
+<script src="../rider/js/rider_app.js" defer></script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 <?php
 session_start();
 include __DIR__ . '/../models/dbconn.php';
+require_once __DIR__ . '/../models/notifications.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../index.html');
@@ -45,6 +46,11 @@ if (!$passwordMatches) {
     exit;
 }
 
+if (($admin['role'] ?? '') !== 'Super Admin') {
+    header('Location: ../index.html?error=restricted');
+    exit;
+}
+
 $_SESSION['admin_id'] = (int) $admin['admin_id'];
 $_SESSION['admin_username'] = $admin['username'];
 $_SESSION['admin_email'] = $admin['email'];
@@ -56,6 +62,18 @@ if ($updateStmt) {
     mysqli_stmt_bind_param($updateStmt, 'i', $_SESSION['admin_id']);
     mysqli_stmt_execute($updateStmt);
     mysqli_stmt_close($updateStmt);
+}
+
+if ($_SESSION['admin_role'] === 'Super Admin') {
+    createNotification(
+        'Super Admin Login Detected',
+        $_SESSION['admin_name'] . ' signed in to the Tricycle Franchise System on ' . date('F j, Y \a\t g:i A') . '.',
+        'Admin',
+        'info',
+        $_SESSION['admin_email'],
+        $_SESSION['admin_id'],
+        'super_admin_login'
+    );
 }
 
 header('Location: ../admin/dashboard.html');
