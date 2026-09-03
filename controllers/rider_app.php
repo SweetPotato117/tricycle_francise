@@ -81,6 +81,7 @@ function listData() {
     ensureOwnershipTables();
     ensureTricycleStatusColumn();
     ensureTricycleDocumentColumns();
+    markExpiredFranchises();
     try {
         checkAndTriggerRenewalNotifications();
     } catch (Throwable $error) {
@@ -88,7 +89,7 @@ function listData() {
     }
     $loginSource = $_SESSION['login_source'] ?? 'rider';
     $franchise = ownedFranchise();
-    $application = $loginSource === 'admin' ? null : ($franchise ? null : pendingApplication());
+    $application = $franchise ? null : pendingApplication();
     $franchiseId = (int) ($franchise['franchise_id'] ?? 0);
     $assignments = $franchiseId ? getAllRecords('franchise_tricycle', 'WHERE franchise_id = ?', [$franchiseId]) : [];
     $tricycleIds = array_map(fn($row) => (int) $row['tricycle_id'], $assignments);
@@ -104,22 +105,44 @@ function listData() {
 
     if ($loginSource === 'admin') {
         $profile = ['id' => (int) ($_SESSION['admin_id'] ?? 0), 'name' => currentAccountName(), 'role' => 'Admin', 'email' => currentAccountEmail(), 'contact' => ''];
-        $franchisePayload = $franchise ? ['id' => $franchiseId, 'name' => $franchise['franchise_name'], 'owner' => $franchise['owner_name'], 'status' => $franchise['renewal_status'], 'expiry' => $franchise['expiry_date'], 'registered' => true] : ['id' => '', 'name' => '', 'owner' => $profile['name'], 'status' => '', 'registered' => false, 'hasApplication' => false];
+        $franchisePayload = $franchise
+            ? ['id' => $franchiseId, 'name' => $franchise['franchise_name'], 'owner' => $franchise['owner_name'], 'status' => $franchise['renewal_status'], 'expiry' => $franchise['expiry_date'], 'registered' => true]
+            : ['id' => '', 'name' => $application['franchise_name'] ?? '', 'owner' => $profile['name'], 'status' => $application['status'] ?? '', 'registered' => false, 'hasApplication' => (bool) $application];
         $driverRows = array_map(function ($driver) use ($assignedTricycleByDriver, $tricycleById, $franchiseId) {
             $tricycleId = $assignedTricycleByDriver[(int) $driver['driver_id']] ?? null;
             $tricycle = $tricycleId ? ($tricycleById[$tricycleId] ?? null) : null;
-            return ['id' => (int) $driver['driver_id'], 'franchiseId' => $franchiseId, 'name' => $driver['full_name'], 'license' => $driver['driver_license'] ?: 'Not provided', 'tricycleId' => $tricycleId, 'tricycle' => $tricycle ? (($tricycle['brand'] ?: 'Tricycle') . ' - ' . ($tricycle['sticker_number'] ?: $tricycle['plate_number'])) : 'Unassigned', 'status' => normalizeDriverStatus($driver['status'] ?? 'Pending'), 'dob' => 'Age ' . ($driver['age'] ?: '-'), 'address' => $driver['address'] ?? '-', 'contact' => $driver['contact_number'] ?? '-', 'licenseExp' => 'Not recorded', 'docs' => array_values(array_filter([!empty($driver['driver_license']) ? ['name' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])] : null, !empty($driver['or_cr']) ? ['name' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])] : null, !empty($driver['president_certificate']) ? ['name' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])] : null]))];
+            return ['id' => (int) $driver['driver_id'], 'franchiseId' => $franchiseId, 'name' => $driver['full_name'], 'license' => $driver['driver_license'] ?: 'Not provided', 'tricycleId' => $tricycleId, 'tricycle' => $tricycle ? (($tricycle['brand'] ?: 'Tricycle') . ' - ' . ($tricycle['sticker_number'] ?: $tricycle['plate_number'])) : 'Unassigned', 'status' => normalizeDriverStatus($driver['status'] ?? 'Pending'), 'dob' => 'Age ' . ($driver['age'] ?: '-'), 'gender' => $driver['gender'] ?? '', 'address' => $driver['address'] ?? '-', 'contact' => $driver['contact_number'] ?? '-', 'licenseExp' => 'Not recorded', 'docs' => array_values(array_filter([!empty($driver['driver_license']) ? ['name' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])] : null, !empty($driver['or_cr']) ? ['name' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])] : null, !empty($driver['president_certificate']) ? ['name' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])] : null]))];
         }, $drivers);
+        foreach ($driverRows as &$driverRow) {
+            foreach ($drivers as $driver) {
+                if ((int) $driver['driver_id'] === (int) $driverRow['id']) {
+                    $driverRow['licenseNumber'] = $driver['driver_license_number'] ?? '';
+                    $driverRow['orCrNumber'] = $driver['or_cr_number'] ?? '';
+                    break;
+                }
+            }
+        }
+        unset($driverRow);
         $tricycleRows = array_map(fn($tricycle) => ['id' => (int) $tricycle['tricycle_id'], 'franchiseId' => $franchiseId, 'unit' => $tricycle['sticker_number'] ?: 'Not specified', 'brand' => $tricycle['brand'] ?: 'Not specified', 'plate' => $tricycle['plate_number'] ?: 'No plate', 'driver' => 'Unassigned', 'status' => normalizeTricycleStatus($tricycle['status'] ?? 'Pending'), 'engine' => $tricycle['engine_number'], 'chassis' => $tricycle['chassis_number'], 'color' => $tricycle['color'] ?: 'Not specified', 'docs' => array_values(array_filter([!empty($tricycle['or_document']) ? ['name' => 'OR Document', 'url' => uploadUrl($tricycle['or_document'])] : null]))], $tricycles);
-        respond(['success' => true, 'franchise' => $franchisePayload, 'drivers' => $driverRows, 'tricycles' => $tricycleRows, 'notifications' => array_map(function ($row) { return ['id' => (int) $row['notification_id'], 'type' => $row['type'] ?? 'Franchise', 'severity' => $row['severity'] ?? 'info', 'title' => $row['title'] ?? '', 'message' => $row['message'] ?? '', 'isRead' => (bool) $row['is_read'], 'created_at' => str_replace(' ', 'T', $row['created_at'])]; }, currentNotifications()), 'profile' => $profile]);
+        respond(['success' => true, 'franchise' => $franchisePayload, 'drivers' => $driverRows, 'tricycles' => $tricycleRows, 'notifications' => array_map(function ($row) { return ['id' => (int) $row['notification_id'], 'type' => $row['type'] ?? 'Franchise', 'severity' => $row['severity'] ?? 'info', 'title' => $row['title'] ?? '', 'message' => $row['message'] ?? '', 'isRead' => (bool) $row['is_read'], 'created_at' => str_replace(' ', 'T', $row['created_at'])]; }, currentNotifications()), 'renewals' => getRenewalsForCurrentRider(), 'profile' => $profile]);
     }
 
     $rider = getRecord('riders', 'rider_id = ? AND status = ?', [(int) $_SESSION['rider_id'], 'Active']);
     $driverRows = array_map(function ($driver) use ($assignedTricycleByDriver, $tricycleById, $franchiseId) {
         $tricycleId = $assignedTricycleByDriver[(int) $driver['driver_id']] ?? null;
         $tricycle = $tricycleId ? ($tricycleById[$tricycleId] ?? null) : null;
-        return ['id' => (int) $driver['driver_id'], 'franchiseId' => $franchiseId, 'name' => $driver['full_name'], 'license' => $driver['driver_license'] ?: 'Not provided', 'tricycleId' => $tricycleId, 'tricycle' => $tricycle ? (($tricycle['brand'] ?: 'Tricycle') . ' - ' . ($tricycle['sticker_number'] ?: $tricycle['plate_number'])) : 'Unassigned', 'status' => normalizeDriverStatus($driver['status'] ?? 'Pending'), 'dob' => 'Age ' . ($driver['age'] ?: '-'), 'address' => $driver['address'] ?? '-', 'contact' => $driver['contact_number'] ?? '-', 'licenseExp' => 'Not recorded', 'docs' => array_values(array_filter([!empty($driver['driver_license']) ? ['name' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])] : null, !empty($driver['or_cr']) ? ['name' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])] : null, !empty($driver['president_certificate']) ? ['name' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])] : null]))];
+        return ['id' => (int) $driver['driver_id'], 'franchiseId' => $franchiseId, 'name' => $driver['full_name'], 'license' => $driver['driver_license'] ?: 'Not provided', 'tricycleId' => $tricycleId, 'tricycle' => $tricycle ? (($tricycle['brand'] ?: 'Tricycle') . ' - ' . ($tricycle['sticker_number'] ?: $tricycle['plate_number'])) : 'Unassigned', 'status' => normalizeDriverStatus($driver['status'] ?? 'Pending'), 'dob' => 'Age ' . ($driver['age'] ?: '-'), 'gender' => $driver['gender'] ?? '', 'address' => $driver['address'] ?? '-', 'contact' => $driver['contact_number'] ?? '-', 'licenseExp' => 'Not recorded', 'docs' => array_values(array_filter([!empty($driver['driver_license']) ? ['name' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])] : null, !empty($driver['or_cr']) ? ['name' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])] : null, !empty($driver['president_certificate']) ? ['name' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])] : null]))];
     }, $drivers);
+    foreach ($driverRows as &$driverRow) {
+        foreach ($drivers as $driver) {
+            if ((int) $driver['driver_id'] === (int) $driverRow['id']) {
+                $driverRow['licenseNumber'] = $driver['driver_license_number'] ?? '';
+                $driverRow['orCrNumber'] = $driver['or_cr_number'] ?? '';
+                break;
+            }
+        }
+    }
+    unset($driverRow);
     $tricycleRows = array_map(fn($tricycle) => ['id' => (int) $tricycle['tricycle_id'], 'franchiseId' => $franchiseId, 'unit' => $tricycle['sticker_number'] ?: 'Not specified', 'brand' => $tricycle['brand'] ?: 'Not specified', 'plate' => $tricycle['plate_number'] ?: 'No plate', 'driver' => 'Unassigned', 'status' => normalizeTricycleStatus($tricycle['status'] ?? 'Pending'), 'engine' => $tricycle['engine_number'], 'chassis' => $tricycle['chassis_number'], 'color' => $tricycle['color'] ?: 'Not specified', 'docs' => array_values(array_filter([!empty($tricycle['or_document']) ? ['name' => 'OR Document', 'url' => uploadUrl($tricycle['or_document'])] : null]))], $tricycles);
     respond(['success' => true, 'franchise' => $franchise ? ['id' => $franchiseId, 'name' => $franchise['franchise_name'], 'owner' => $franchise['owner_name'], 'status' => $franchise['renewal_status'], 'expiry' => $franchise['expiry_date'], 'registered' => true] : ['id' => '', 'name' => $application['franchise_name'] ?? '', 'owner' => $_SESSION['rider_name'], 'status' => $application['status'] ?? '', 'registered' => false, 'hasApplication' => (bool) $application], 'drivers' => $driverRows, 'tricycles' => $tricycleRows, 'notifications' => array_map(function ($row) { return ['id' => (int) $row['notification_id'], 'type' => $row['type'] ?? 'Franchise', 'severity' => $row['severity'] ?? 'info', 'title' => $row['title'] ?? '', 'message' => $row['message'] ?? '', 'isRead' => (bool) $row['is_read'], 'created_at' => str_replace(' ', 'T', $row['created_at'])]; }, currentNotifications()), 'renewals' => getRenewalsForCurrentRider(), 'profile' => ['id' => (int) $rider['rider_id'], 'name' => $rider['full_name'], 'role' => 'Rider', 'email' => $rider['email'], 'contact' => $rider['contact_number'] ?? '']]);
 }
@@ -143,10 +166,19 @@ function applyRenewal($data) {
     $franchiseId = (int) ($franchise['franchise_id'] ?? 0);
     if ($franchiseId <= 0) respond(['success' => false, 'message' => 'Franchise not found.'], 404);
 
+    $expiryYear = !empty($franchise['expiry_date']) ? (int) date('Y', strtotime($franchise['expiry_date'])) : 0;
+    $year = $expiryYear > 0 ? $expiryYear - 1 : (int) date('Y');
+    $renewalOpeningDate = new DateTime($year . '-01-01');
+    if (new DateTime('today') < $renewalOpeningDate) {
+        respond(['success' => false, 'message' => "Renewal applications for {$year} open on January 1, {$year}."], 422);
+    }
+    $existingRenewal = getRecord('renewals', 'franchise_id = ? AND renewal_year = ? ORDER BY renewal_id DESC LIMIT 1', [$franchiseId, $year]);
+    if ($existingRenewal) {
+        respond(['success' => false, 'message' => "A renewal application for {$year} has already been submitted. Please wait for the LGU to process it."], 422);
+    }
     $receipt = saveDataUrlUpload($data['receiptDataUrl'] ?? '', 'renewal_receipt');
     if (!$receipt) respond(['success' => false, 'message' => 'Please upload a valid receipt photo.'], 422);
 
-    $year = !empty($franchise['expiry_date']) ? max((int) date('Y'), (int) date('Y', strtotime($franchise['expiry_date']))) : (int) date('Y');
     $renewalDate = $year . '-01-01';
     $dueDate = ($year + 1) . '-01-01';
 
@@ -186,16 +218,19 @@ function createDriver($data) {
     if (!$franchise) respond(['success' => false, 'message' => 'Wait for franchise approval before adding drivers.'], 422);
     $name = trim($data['name'] ?? '');
     $dob = trim((string) ($data['dob'] ?? ''));
+    $gender = trim((string) ($data['gender'] ?? ''));
     $birthDate = $dob !== '' ? DateTime::createFromFormat('!Y-m-d', $dob) : false;
     $dateErrors = DateTime::getLastErrors();
     $hasDateErrors = is_array($dateErrors) && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0);
-    if ($name === '' || $birthDate === false || $hasDateErrors) respond(['success' => false, 'message' => 'Please enter your full name and a valid date of birth.'], 422);
+    $licenseNumber = trim((string) ($data['driver_license_number'] ?? ''));
+    $orCrNumber = trim((string) ($data['or_cr_number'] ?? ''));
+    if ($name === '' || $birthDate === false || $hasDateErrors || !in_array($gender, ['Male', 'Female'], true) || $licenseNumber === '' || $orCrNumber === '') respond(['success' => false, 'message' => 'Please enter valid driver information, including license and OR/CR numbers.'], 422);
     $age = $birthDate->diff(new DateTime('today'))->y;
     if ($age < 18 || $age > 80) respond(['success' => false, 'message' => 'The driver must be between 18 and 80 years old.'], 422);
     ensureOwnershipTables();
     $tricycleId = filter_var($data['tricycle_id'] ?? null, FILTER_VALIDATE_INT);
     if ($tricycleId !== false && $tricycleId !== null) validateActiveTricycle($tricycleId, $franchise['franchise_id']);
-    $id = insertSomething('drivers', ['full_name' => trim($data['name']), 'contact_number' => trim($data['contact'] ?? ''), 'age' => $age, 'address' => trim($data['address'] ?? ''), 'driver_license' => saveDataUrlUpload($data['licenseData'] ?? '', 'driver_license') ?: 'Not provided', 'or_cr' => saveDataUrlUpload($data['orcrData'] ?? '', 'or_cr'), 'president_certificate' => saveDataUrlUpload($data['presidentsData'] ?? '', 'president_certificate'), 'status' => 'Pending']);
+    $id = insertSomething('drivers', ['full_name' => trim($data['name']), 'contact_number' => trim($data['contact'] ?? ''), 'age' => $age, 'gender' => $gender, 'driver_license_number' => $licenseNumber, 'or_cr_number' => $orCrNumber, 'address' => trim($data['address'] ?? ''), 'driver_license' => saveDataUrlUpload($data['licenseData'] ?? '', 'driver_license') ?: 'Not provided', 'or_cr' => saveDataUrlUpload($data['orcrData'] ?? '', 'or_cr'), 'president_certificate' => saveDataUrlUpload($data['presidentsData'] ?? '', 'president_certificate'), 'status' => 'Pending']);
     insertSomething('franchise_driver', ['franchise_id' => $franchise['franchise_id'], 'driver_id' => $id]);
     if ($tricycleId !== false && $tricycleId !== null) {
         deleteRecord('driver_tricycle', 'tricycle_id = ?', [$tricycleId]);
@@ -246,10 +281,13 @@ function updateDriver($data) {
 
     $name = trim($data['name'] ?? '');
     $contact = trim($data['contact'] ?? '');
+    $gender = trim((string) ($data['gender'] ?? ''));
+    $licenseNumber = trim((string) ($data['driver_license_number'] ?? ''));
+    $orCrNumber = trim((string) ($data['or_cr_number'] ?? ''));
     $address = trim($data['address'] ?? '');
     $birthDate = DateTime::createFromFormat('Y-m-d', $data['dob'] ?? '');
     $age = $birthDate ? $birthDate->diff(new DateTime('today'))->y : (int) ($existing['age'] ?? 0);
-    if ($name === '' || $contact === '' || $age === null || $age < 18 || $age > 80) respond(['success' => false, 'message' => 'Please provide valid driver information.'], 422);
+    if ($name === '' || $contact === '' || !in_array($gender, ['Male', 'Female'], true) || $licenseNumber === '' || $orCrNumber === '' || $age === null || $age < 18 || $age > 80) respond(['success' => false, 'message' => 'Please provide valid driver information, including license and OR/CR numbers.'], 422);
 
     $license = saveDataUrlUpload($data['licenseData'] ?? '', 'driver_license', $existing['driver_license'] ?? null);
     $orCr = saveDataUrlUpload($data['orcrData'] ?? '', 'or_cr', $existing['or_cr'] ?? null);
@@ -257,7 +295,7 @@ function updateDriver($data) {
     if (!$license) respond(['success' => false, 'message' => 'The driver license document is required.'], 422);
     $tricycleId = filter_var($data['tricycle_id'] ?? null, FILTER_VALIDATE_INT);
     if ($tricycleId !== false && $tricycleId !== null) validateActiveTricycle($tricycleId, $franchise['franchise_id']);
-    updateRecord('drivers', ['full_name' => $name, 'contact_number' => $contact, 'age' => $age, 'address' => $address, 'driver_license' => $license, 'or_cr' => $orCr, 'president_certificate' => $certificate], 'driver_id = ?', [$id]);
+    updateRecord('drivers', ['full_name' => $name, 'contact_number' => $contact, 'age' => $age, 'gender' => $gender, 'address' => $address, 'driver_license_number' => $licenseNumber, 'or_cr_number' => $orCrNumber, 'driver_license' => $license, 'or_cr' => $orCr, 'president_certificate' => $certificate], 'driver_id = ?', [$id]);
     deleteRecord('driver_tricycle', 'driver_id = ?', [$id]);
     if ($tricycleId !== false && $tricycleId !== null) {
         deleteRecord('driver_tricycle', 'tricycle_id = ?', [$tricycleId]);

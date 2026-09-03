@@ -39,7 +39,11 @@
     } : {};
     const response = await fetch(accountApi, options);
     const result = await response.json();
-    if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
+    if (!response.ok || !result.success) {
+      const error = new Error(result.message || 'Request failed.');
+      error.status = response.status;
+      throw error;
+    }
     return result;
   }
 
@@ -54,6 +58,10 @@
       updateStats();
       render();
     } catch (error) {
+      if (error.status === 403) {
+        window.location.replace('dashboard.html');
+        return;
+      }
       emptyState.classList.remove('hidden');
       emptyState.querySelector('div').textContent = error.message;
     }

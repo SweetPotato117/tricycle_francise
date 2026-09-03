@@ -6,6 +6,7 @@ $modelsPath = __DIR__ . '/../models';
 set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
 require_once $modelsPath . '/functions.php';
 require_once $modelsPath . '/notifications.php';
+require_once $modelsPath . '/notification_triggers.php';
 require_once $modelsPath . '/upload.php';
 
 function ensureFranchiseDocumentsTable()
@@ -61,11 +62,12 @@ function franchisePayload($data)
 	$name = trim($data['name'] ?? $data['franchise_name'] ?? '');
 	$owner = trim($data['owner'] ?? $data['owner_name'] ?? '');
 	$ownerEmail = trim($data['ownerEmail'] ?? $data['owner_email'] ?? '');
+	$address = trim($data['address'] ?? '');
 	$issue = $data['issue'] ?? $data['issue_date'] ?? '';
 	$expiry = $data['expiry'] ?? $data['expiry_date'] ?? '';
 	$status = $data['status'] ?? $data['renewal_status'] ?? 'Active';
-	if ($name === '' || $owner === '' || $ownerEmail === '' || $issue === '' || $expiry === '') {
-		respond(['success' => false, 'message' => 'Franchise name, owner name, owner email, issue date, and expiry date are required.'], 422);
+	if ($name === '' || $owner === '' || $ownerEmail === '' || $address === '' || $issue === '' || $expiry === '') {
+		respond(['success' => false, 'message' => 'Franchise name, owner name, owner email, franchise address, issue date, and expiry date are required.'], 422);
 	}
 	if (!filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
 		respond(['success' => false, 'message' => 'Please provide a valid owner email address.'], 422);
@@ -75,7 +77,6 @@ function franchisePayload($data)
 		respond(['success' => false, 'message' => 'Please select an active Admin account as the franchise owner.'], 422);
 	}
 	$owner = trim(($ownerAccount['first_name'] ?? '') . ' ' . ($ownerAccount['last_name'] ?? '')) ?: $ownerAccount['username'];
-	$address = $ownerAccount['address'] ?? trim($data['address'] ?? '');
 	if (!in_array($status, ['Active', 'Expired', 'Pending Renewal'], true)) {
 		respond(['success' => false, 'message' => 'Please select a valid renewal status.'], 422);
 	}
@@ -93,6 +94,7 @@ function franchisePayload($data)
 
 function listFranchises()
 {
+	markExpiredFranchises();
 	ensureFranchiseDocumentsTable();
 	ensureAdminAddressColumn();
 	$franchises = getAllRecords('franchises', 'ORDER BY franchise_id DESC');

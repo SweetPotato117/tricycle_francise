@@ -198,6 +198,8 @@
     document.getElementById('fContact').value = d.contact;
     document.getElementById('fAge').value = d.age;
     document.getElementById('fGender').value = d.gender;
+    document.getElementById('fLicenseNumber').value = d.driverLicenseNumber || '';
+    document.getElementById('fOrCrNumber').value = d.orCrNumber || '';
     document.getElementById('fStatus').value = d.status;
     document.getElementById('fAddress').value = d.address;
     driverFiles.forEach(id => { document.getElementById(id).value = ''; });
@@ -221,6 +223,8 @@
       contact: document.getElementById('fContact').value.trim(),
       age: Number(document.getElementById('fAge').value),
       gender: document.getElementById('fGender').value,
+      driver_license_number: document.getElementById('fLicenseNumber').value.trim(),
+      or_cr_number: document.getElementById('fOrCrNumber').value.trim(),
       status: document.getElementById('fStatus').value,
       address: document.getElementById('fAddress').value.trim(),
       tricycle: "Unassigned"
@@ -248,6 +252,8 @@
     document.getElementById('vTricycle').textContent = d.tricycle;
     document.getElementById('vId').textContent = `#${String(d.id).padStart(4, '0')}`;
     document.getElementById('vAddress').textContent = d.address;
+    document.getElementById('vLicenseNumber').textContent = d.driverLicenseNumber || '—';
+    document.getElementById('vOrCrNumber').textContent = d.orCrNumber || '—';
     const documentLinks = [d.driverLicense, d.orCr, d.presidentCertificate];
     document.querySelectorAll('#driverDocuments .doc-link').forEach((link, index) => {
       const url = documentLinks[index];

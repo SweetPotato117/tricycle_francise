@@ -36,7 +36,11 @@ function currentAdminId()
 
 function isSuperAdmin()
 {
-	return ($_SESSION['admin_role'] ?? '') === 'Super Admin';
+	if (trim((string) ($_SESSION['admin_role'] ?? '')) === 'Super Admin') return true;
+	$adminId = currentAdminId();
+	if (!$adminId) return false;
+	$admin = getRecord('admins', 'admin_id = ? AND status = ?', [$adminId, 'Active']);
+	return trim((string) ($admin['role'] ?? '')) === 'Super Admin';
 }
 
 function ensureDriverOwnershipColumn()
@@ -55,6 +59,8 @@ function driverPayload($data, $existing = [])
 	$contact = trim($data['contact'] ?? $data['contact_number'] ?? '');
 	$age = filter_var($data['age'] ?? null, FILTER_VALIDATE_INT);
 	$gender = $data['gender'] ?? '';
+	$driverLicenseNumber = trim($data['driver_license_number'] ?? '');
+	$orCrNumber = trim($data['or_cr_number'] ?? '');
 	$status = $data['status'] ?? 'Pending';
 
 	if ($name === '' || $age === false || $age < 18 || $age > 80) {
@@ -62,6 +68,9 @@ function driverPayload($data, $existing = [])
 	}
 	if (!in_array($gender, ['Male', 'Female'], true)) {
 		respond(['success' => false, 'message' => 'Please select a valid gender.'], 422);
+	}
+	if ($driverLicenseNumber === '' || $orCrNumber === '') {
+		respond(['success' => false, 'message' => 'Driver license and OR/CR numbers are required.'], 422);
 	}
 	if (!in_array($status, ['Pending', 'For Review', 'Approved'], true)) {
 		respond(['success' => false, 'message' => 'Please select a valid status.'], 422);
@@ -72,6 +81,8 @@ function driverPayload($data, $existing = [])
 		'contact_number' => $contact,
 		'age' => $age,
 		'gender' => $gender,
+		'driver_license_number' => $driverLicenseNumber,
+		'or_cr_number' => $orCrNumber,
 		'address' => trim($data['address'] ?? ''),
 		'driver_license' => $existing['driver_license'] ?? null,
 		'or_cr' => $existing['or_cr'] ?? null,
@@ -110,6 +121,8 @@ function listDrivers()
 			'contact' => $driver['contact_number'] ?? '',
 			'age' => (int) $driver['age'],
 			'gender' => $driver['gender'],
+			'driverLicenseNumber' => $driver['driver_license_number'] ?? '',
+			'orCrNumber' => $driver['or_cr_number'] ?? '',
 			'address' => $driver['address'] ?? '',
 			'tricycle' => $assigned[(int) $driver['driver_id']] ?? 'Unassigned',
 			'status' => $driver['status'],

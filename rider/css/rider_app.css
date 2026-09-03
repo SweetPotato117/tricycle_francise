@@ -125,6 +125,7 @@ button{font-family:inherit;}
 .application-status.approved{border-left-color:var(--approved-fg); background:var(--approved-bg);}
 .application-status.warning{border-left-color:var(--pending-fg); background:var(--pending-bg);}
 .application-status.not-approved{border-left-color:var(--expired-fg); background:var(--expired-bg);}
+.application-status.processing-status{border-left-color:var(--approved-fg); background:var(--approved-bg);}
 .application-status-label{font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-600); font-family:'Poppins',sans-serif;}
 .application-status-message{margin-top:3px; font-size:13.5px; line-height:1.4; font-weight:700; color:var(--ink-900); font-family:'Poppins',sans-serif;}
 .field-note{font-size:12.5px; line-height:1.45; color:var(--ink-600); background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px;}
@@ -535,16 +536,6 @@ button{font-family:inherit;}
 .login-screen.hidden{display:none;}
 .login-screen:not(.hidden) + #app{display:none;}
 
-.login-photo{
-  display:none; position:relative; flex:1.1; min-height:260px; overflow:hidden;
-  background:linear-gradient(180deg, #C7D6E4 0%, #B9CADA 45%, #97A6B4 78%, #7C8B99 100%);
-}
-.login-photo svg{position:absolute; inset:0; width:100%; height:100%;}
-.login-photo::after{
-  content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(10,37,64,0) 55%, rgba(10,37,64,0.28) 100%);
-}
-
 .login-panel{
   flex:none; width:100%; display:flex; align-items:center; justify-content:center;
   padding:calc(40px + var(--safe-t)) 24px calc(32px + var(--safe-b));
@@ -593,6 +584,5 @@ button{font-family:inherit;}
 
 @media (min-width:700px){
   .login-screen{flex-direction:row;}
-  .login-photo{display:block;}
   .login-panel{flex:1; max-width:560px; padding:24px;}
 }

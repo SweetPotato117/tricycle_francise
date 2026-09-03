@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 $modelsPath = __DIR__ . '/../models';
 set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
 require_once $modelsPath . '/functions.php';
+require_once $modelsPath . '/notification_triggers.php';
 
 function respond($payload, $status = 200)
 {
@@ -13,6 +14,7 @@ function respond($payload, $status = 200)
 }
 
 try {
+	markExpiredFranchises();
 	$drivers = getAllRecords('drivers', 'ORDER BY full_name');
 	$franchises = getAllRecords('franchises');
 	$tricycles = getAllRecords('tricycles');

@@ -56,7 +56,7 @@ function listPendingRequests() {
 			'id' => (int) $driver['driver_id'], 'type' => 'Driver Addition', 'actionType' => 'driver',
 			'title' => 'Driver submission - ' . $driver['full_name'], 'description' => 'Driver registration submitted for approval.',
 			'submittedAt' => $driver['created_at'], 'status' => 'Pending', 'denialReason' => '',
-			'docs' => array_values(array_filter([['label' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])], ['label' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])], ['label' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])]], fn($document) => $document['url'] !== ''))
+			'docs' => array_values(array_filter([['label' => "Driver's License Number", 'value' => $driver['driver_license_number'] ?? ''], ['label' => 'OR/CR Number', 'value' => $driver['or_cr_number'] ?? ''], ['label' => "Driver's License", 'url' => uploadUrl($driver['driver_license'])], ['label' => 'OR/CR', 'url' => uploadUrl($driver['or_cr'])], ['label' => "President's Certificate", 'url' => uploadUrl($driver['president_certificate'])]], fn($document) => ($document['url'] ?? '') !== '' || ($document['value'] ?? '') !== ''))
 		]);
 	}
 

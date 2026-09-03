@@ -130,6 +130,7 @@ $driverAssignmentDates = assignmentDateMap($driverAssignments, 'tricycle_id', 'a
 $franchiseAssignmentDates = assignmentDateMap($franchiseAssignments, 'tricycle_id', 'assigned_date');
 
 $reportRows = [];
+$franchiseAddressRows = [];
 
 foreach ($tricycles as $tricycle) {
     $tricycleId = (int) $tricycle['tricycle_id'];
@@ -139,11 +140,14 @@ foreach ($tricycles as $tricycle) {
     $driver = $driverId !== null ? ($drivers[$driverId] ?? null) : null;
     $franchise = $franchiseId !== null ? ($franchises[$franchiseId] ?? null) : null;
 
-    // Determine registration date
-    $registrationDate = null;
-    if ($franchise && $franchise['issue_date']) {
+    $registrationDate = getLatestDateForAssignment([
+        $driverAssignmentDates[$tricycleId] ?? null,
+        $franchiseAssignmentDates[$tricycleId] ?? null
+    ]);
+    if (!$registrationDate && $franchise && $franchise['issue_date']) {
         $registrationDate = normalizeDateValue($franchise['issue_date']);
-    } elseif ($tricycle['created_at']) {
+    }
+    if (!$registrationDate && !empty($tricycle['created_at'])) {
         $registrationDate = normalizeDateValue($tricycle['created_at']);
     }
 
@@ -159,13 +163,22 @@ foreach ($tricycles as $tricycle) {
         'franchise_address' => $franchise['address'] ?? '',
         'brand' => $tricycle['brand'] ?? '',
         'engine_number' => $tricycle['engine_number'] ?? '',
+        'chassis_number' => $tricycle['chassis_number'] ?? '',
         'color' => $tricycle['color'] ?? '',
         'plate_number' => $tricycle['plate_number'] ?? '',
-        'registration_date' => $registrationDate ?: '',
+        'registration_date' => $registrationDate ? date('Y-m-d', strtotime($registrationDate)) : '',
         'driver_name' => $driver['full_name'] ?? '',
+        'driver_license_number' => $driver['driver_license_number'] ?? '',
+        'or_cr_number' => $driver['or_cr_number'] ?? '',
         'driver_address' => $driver['address'] ?? '',
         'toda' => $franchise['franchise_name'] ?? '',
     ];
+    if ($franchiseId && $franchise) {
+        $franchiseAddressRows[$franchiseId] = [
+            'name' => $franchise['franchise_name'] ?? '',
+            'address' => $franchise['address'] ?? ''
+        ];
+    }
 }
 
 usort($reportRows, fn($left, $right) => strcmp($left['record_date'], $right['record_date']));
@@ -181,30 +194,54 @@ $fp = fopen('php://output', 'w');
 
 $headers = [
     'Operator Name',
-    'Address',
     'Brand of Tricycle',
     'Engine Number',
+    'Chassis Number',
     'Color',
     'Plate Number',
     'Date of Registration',
     'Driver',
+    "Driver's License Number",
+    'OR/CR Number',
     'Driver Address',
-    'Toda'
+    'Toda',
+    'TODA Address'
 ];
 fputcsv($fp, $headers);
 
 foreach ($reportRows as $row) {
     fputcsv($fp, [
         $row['operator_name'],
-        $row['franchise_address'],
         $row['brand'],
         $row['engine_number'],
+        $row['chassis_number'],
         $row['color'],
         $row['plate_number'],
         $row['registration_date'],
         $row['driver_name'],
+        $row['driver_license_number'],
+        $row['or_cr_number'],
         $row['driver_address'],
-        $row['toda']
+        $row['toda'],
+        $row['franchise_address']
+    ]);
+}
+
+foreach ($franchiseAddressRows as $franchiseAddress) {
+    fputcsv($fp, [
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        $franchiseAddress['name'],
+        $franchiseAddress['address']
     ]);
 }
 

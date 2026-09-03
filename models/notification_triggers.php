@@ -150,14 +150,15 @@ function checkAndTriggerRenewalNotifications($admin_email = null)
 	global $conn;
 	$reminderDays = [20];
 	$superAdminEmails = getSuperAdminEmails();
+	markExpiredFranchises();
 	
 	// Get all franchises and their owner admins
 	$query = "SELECT f.franchise_id, f.franchise_name, f.owner_name, f.owner_email, f.expiry_date, f.issue_date,
 	          a.email as admin_email
 	          FROM franchises f
 	          LEFT JOIN admins a ON f.owner_email = a.email AND a.status = 'Active'
-	          WHERE f.expiry_date IS NOT NULL 
-	          AND (DATEDIFF(f.expiry_date, CURDATE()) IN (90, 20, 10, 1)
+	          WHERE f.expiry_date IS NOT NULL
+	          AND (DATEDIFF(f.expiry_date, CURDATE()) = 20
 	               OR f.expiry_date < CURDATE())
 	          ORDER BY f.expiry_date ASC";
 	
@@ -236,6 +237,22 @@ function checkAndTriggerRenewalNotifications($admin_email = null)
 	}
 
 	mysqli_free_result($result);
+}
+
+/**
+ * Keep the superadmin franchise status aligned with the expiry date.
+ */
+function markExpiredFranchises()
+{
+	global $conn;
+	$query = "UPDATE franchises
+	          SET renewal_status = 'Expired'
+	          WHERE expiry_date IS NOT NULL
+	          AND expiry_date < CURDATE()
+	          AND renewal_status <> 'Expired'";
+	if (!mysqli_query($conn, $query)) {
+		error_log('Unable to mark expired franchises: ' . mysqli_error($conn));
+	}
 }
 
 /**

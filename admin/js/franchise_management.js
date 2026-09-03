@@ -73,7 +73,6 @@
   document.getElementById('fOwner').addEventListener('change', event => {
     const account = ownerAccounts.find(item => item.username === event.target.value);
     document.getElementById('fOwnerEmail').value = account ? account.email : '';
-    document.getElementById('fAddress').value = account ? account.address : '';
   });
 
   let activeFilter = 'All';
@@ -139,6 +138,7 @@
           </div>
         </td>
         <td>${f.owner}</td>
+        <td>${f.address || '—'}</td>
         <td>${formatDate(f.issue)}</td>
         <td>
           <div class="expiry-cell">
@@ -278,7 +278,7 @@
     const ownerAccount = ownerAccounts.find(account => account.email === f.ownerEmail);
     document.getElementById('fOwner').value = ownerAccount ? ownerAccount.username : '';
     document.getElementById('fOwnerEmail').value = ownerAccount ? ownerAccount.email : '';
-    document.getElementById('fAddress').value = ownerAccount ? ownerAccount.address : f.address;
+    document.getElementById('fAddress').value = f.address || '';
     document.getElementById('fIssueDate').value = f.issue;
     document.getElementById('fExpiryDate').value = f.expiry;
     document.getElementById('fStatus').value = f.status;

@@ -23,6 +23,8 @@ const state = {
   refreshTimer: null
 };
 
+let localFranchiseSubmission = sessionStorage.getItem('franchiseRegistrationPending') === 'true';
+
 let editingTricycleId = null;
 let editingDriverId = null;
 
@@ -226,6 +228,17 @@ function getRenewalTimelineEntries(renewal) {
 function renderFranchiseSummary() {
   const franchise = state.franchise || {};
   const registered = Boolean(franchise.registered);
+  const hasPendingApplication = Boolean(franchise.hasApplication || (!registered && localFranchiseSubmission));
+
+  if (registered && localFranchiseSubmission) {
+    localFranchiseSubmission = false;
+    sessionStorage.removeItem('franchiseRegistrationPending');
+  }
+
+  const tricycleCount = document.getElementById('stat-total');
+  const driverCount = document.getElementById('stat-inactive');
+  if (tricycleCount) tricycleCount.textContent = String((state.tricycles || []).length);
+  if (driverCount) driverCount.textContent = String((state.drivers || []).length);
 
   const registeredView = document.getElementById('franchise-registered-view');
   const emptyView = document.getElementById('franchise-empty-view');
@@ -251,14 +264,18 @@ function renderFranchiseSummary() {
 
   const emptyTitle = document.getElementById('franchise-empty-title');
   const emptyMessage = document.getElementById('franchise-empty-message');
+  const registerFranchiseButton = document.getElementById('btn-open-register-franchise');
+  const processingBanner = document.getElementById('franchise-processing-banner');
   if (!registered && emptyTitle) {
-    emptyTitle.textContent = franchise.hasApplication ? 'Application Under Review' : 'No Franchise Registered';
+    emptyTitle.textContent = hasPendingApplication ? 'Franchise Application Submitted' : 'No Franchise Registered';
   }
   if (!registered && emptyMessage) {
-    emptyMessage.textContent = franchise.hasApplication
-      ? 'Your franchise application is waiting for admin review.'
+    emptyMessage.textContent = hasPendingApplication
+      ? `${franchise.name || 'Your franchise'} has been submitted for LGU review.`
       : 'You do not have a registered franchise yet. Register your franchise to start adding tricycles and drivers.';
   }
+  if (registerFranchiseButton) registerFranchiseButton.style.display = hasPendingApplication ? 'none' : '';
+  if (processingBanner) processingBanner.hidden = !hasPendingApplication;
 
   const applicationStatus = document.getElementById('franchise-application-status');
   const applicationStatusMessage = document.getElementById('franchise-application-status-message');
@@ -274,7 +291,7 @@ function renderFranchiseSummary() {
     if (isExpiringSoon) {
       applicationStatusMessage.textContent = `Your franchise is due to expire in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Please submit your renewal before the due date.`;
     } else if (isExpired) {
-      applicationStatusMessage.textContent = 'Your franchise has expired. Please submit a renewal application immediately.';
+      applicationStatusMessage.textContent = `Your franchise expired on ${formatDate(franchise.expiry)} and is no longer active. Please submit a renewal application.`;
     } else if (franchise.registered && franchise.status !== 'Active') {
       applicationStatusMessage.textContent = `Your franchise status is ${franchise.status}. Please contact the LGU for assistance.`;
     }
@@ -283,9 +300,9 @@ function renderFranchiseSummary() {
   const pendingBanner = document.getElementById('pending-approval-banner');
   const pendingMessage = document.getElementById('pending-approval-message');
   if (pendingBanner && pendingMessage) {
-    const show = Boolean(franchise.hasApplication && !franchise.registered);
+    const show = Boolean(hasPendingApplication && !franchise.registered);
     pendingBanner.style.display = show ? 'block' : 'none';
-    pendingMessage.textContent = franchise.hasApplication ? 'Your application is currently being reviewed by the admin.' : 'Waiting for approval.';
+    pendingMessage.textContent = hasPendingApplication ? 'Your application is currently being reviewed by the LGU.' : 'Waiting for approval.';
   }
 
   const renewalStatus = document.getElementById('renewal-status-summary');
@@ -378,7 +395,7 @@ function buildDriverListItem(driver) {
         <span class="badge ${statBadgeClass(driver.status)}">${normalizeStatus(driver.status)}</span>
       </div>
       <div class="card-sub">
-        <span>${driver.license || 'No license'}</span>
+        <span>${driver.licenseNumber || 'No license number'}</span>
         <span class="dot"></span>
         <span>${driver.contact || 'No contact'}</span>
       </div>
@@ -391,10 +408,13 @@ function buildDriverListItem(driver) {
     const detail = document.getElementById('detail-driver');
     if (!detail) return;
     document.getElementById('dd-name').textContent = driver.name || 'Driver';
-    document.getElementById('dd-sub').textContent = `${driver.license || 'No license'} • ${driver.contact || 'No contact'}`;
+    document.getElementById('dd-sub').textContent = `${driver.licenseNumber || 'No license number'} • ${driver.contact || 'No contact'}`;
     document.getElementById('dd-personal-fields').innerHTML = `
       <div class="field-row"><span>Full Name</span><strong>${driver.name || '—'}</strong></div>
       <div class="field-row"><span>Date of Birth</span><strong>${driver.dob || '—'}</strong></div>
+      <div class="field-row"><span>Gender</span><strong>${driver.gender || '—'}</strong></div>
+      <div class="field-row"><span>Driver's License Number</span><strong>${driver.licenseNumber || '—'}</strong></div>
+      <div class="field-row"><span>OR/CR Number</span><strong>${driver.orCrNumber || '—'}</strong></div>
       <div class="field-row"><span>Address</span><strong>${driver.address || '—'}</strong></div>
       <div class="field-row"><span>Contact</span><strong>${driver.contact || '—'}</strong></div>
     `;
@@ -547,7 +567,57 @@ function renderRenewals() {
   const container = document.getElementById('renewal-list');
   const emptyState = document.getElementById('renewal-empty-state');
   const historyWrap = document.getElementById('renewal-history');
+  const processingBanner = document.getElementById('renewal-processing-banner');
   const renewals = Array.isArray(state.renewals) ? state.renewals : [];
+  const renewalForm = document.getElementById('renewal-form');
+  const renewalStateBanner = document.getElementById('renewal-state-banner');
+  const renewalStateLabel = document.getElementById('renewal-state-label');
+  const renewalStateMessage = document.getElementById('renewal-state-message');
+
+  const latestRenewal = renewals[0];
+  const latestStatus = normalizeStatus(latestRenewal?.status || '').toLowerCase();
+  const isProcessing = Boolean(latestRenewal && !latestStatus.includes('confirm') && !latestStatus.includes('approv') && !latestStatus.includes('reject') && !latestStatus.includes('fail') && !latestStatus.includes('declin'));
+  if (processingBanner) processingBanner.style.display = isProcessing ? 'block' : 'none';
+
+  const currentYear = new Date().getFullYear();
+  const expiryYear = state.franchise?.expiry ? new Date(`${state.franchise.expiry}T00:00:00`).getFullYear() : 0;
+  const renewalYear = expiryYear > 0 ? expiryYear - 1 : currentYear;
+  const currentYearRenewal = renewals.find((renewal) => Number(renewal.year) === renewalYear);
+  const currentYearStatus = normalizeStatus(currentYearRenewal?.status || '').toLowerCase();
+  const hasCurrentYearRenewal = Boolean(currentYearRenewal);
+  const hasRegisteredFranchise = Boolean(state.franchise?.registered);
+  const renewalOpeningDate = new Date(`${renewalYear}-01-01T00:00:00`);
+  const renewalWindowOpen = new Date() >= renewalOpeningDate;
+  const currentYearProcessing = hasCurrentYearRenewal && !currentYearStatus.includes('confirm') && !currentYearStatus.includes('approv') && !currentYearStatus.includes('reject') && !currentYearStatus.includes('fail') && !currentYearStatus.includes('declin');
+  const expiryDate = state.franchise?.expiry ? new Date(`${state.franchise.expiry}T00:00:00`) : null;
+  const daysUntilExpiry = expiryDate && !Number.isNaN(expiryDate.getTime())
+    ? Math.ceil((expiryDate - new Date(new Date().setHours(0, 0, 0, 0))) / 86400000)
+    : null;
+  const expiryText = state.franchise?.expiry ? formatDate(state.franchise.expiry) : 'the franchise expiry date';
+  const currentStatus = normalizeStatus(state.franchise?.status || 'Pending');
+  const franchiseExpired = hasRegisteredFranchise && (currentStatus === 'Expired' || (daysUntilExpiry !== null && daysUntilExpiry < 0));
+  const franchiseExpiringSoon = hasRegisteredFranchise && currentStatus === 'Active' && daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 20;
+  if (renewalStateBanner && renewalStateLabel && renewalStateMessage) {
+    renewalStateBanner.className = `application-status renewal-state-banner ${franchiseExpired ? 'not-approved' : franchiseExpiringSoon ? 'warning' : currentYearProcessing ? 'processing-status' : hasCurrentYearRenewal ? 'not-approved' : ''}`;
+    renewalStateLabel.textContent = hasCurrentYearRenewal ? 'Renewal Status' : 'Franchise Status';
+    renewalStateMessage.textContent = !hasRegisteredFranchise
+      ? 'Renewal applications become available after your franchise registration has been approved by the LGU.'
+      : franchiseExpired
+      ? `Your franchise expired on ${expiryText} and is no longer active. Please submit a renewal application.`
+      : franchiseExpiringSoon
+      ? `Your franchise is still active, but it will expire on ${expiryText}. Please submit your renewal before the expiration date.`
+      : currentYearProcessing
+      ? `Your ${renewalYear} franchise renewal application has been received by the LGU and is currently under review. Please wait for the result before submitting another renewal.`
+      : hasCurrentYearRenewal
+        ? `A ${renewalYear} renewal application has already been processed. Only one renewal may be submitted each year.`
+        : !renewalWindowOpen
+          ? `Franchise currently active. Renewal applications open on January 1, ${renewalYear}.`
+          : `Franchise currently active. Renewal applications are accepted from January through December of ${renewalYear}.`;
+  }
+  if (renewalForm) {
+    const canSubmit = !hasCurrentYearRenewal && hasRegisteredFranchise && renewalWindowOpen;
+    renewalForm.style.display = canSubmit ? '' : 'none';
+  }
 
   if (!container || !emptyState || !historyWrap) return;
 
@@ -633,7 +703,7 @@ async function handleApplyRenewal(evt) {
     });
 
     evt.target.reset();
-    showToast('Renewal application submitted successfully. Our admin team is reviewing your receipt.');
+    showToast('Renewal application submitted for LGU review.');
     await refreshDashboard();
     setActiveNav('renew');
   } catch (error) {
@@ -646,6 +716,9 @@ async function refreshDashboard(resetNavigation = true) {
     const result = await requestJson(riderApi, { method: 'GET' });
     state.profile = result.profile || {};
     state.franchise = result.franchise || {};
+    if (!state.franchise.registered && localFranchiseSubmission) {
+      state.franchise.hasApplication = true;
+    }
     state.drivers = result.drivers || [];
     state.tricycles = result.tricycles || [];
     state.notifications = result.notifications || [];
@@ -700,33 +773,6 @@ async function handleLogin(evt) {
   }
 }
 
-async function handleRegister(evt) {
-  evt.preventDefault();
-  const name = document.getElementById('register-name').value.trim();
-  const email = document.getElementById('register-email').value.trim();
-  const password = document.getElementById('register-password').value;
-
-  if (!name || !email || password.length < 8) {
-    showToast('Please complete the account form with a valid email and 8-character password.', 'error');
-    return;
-  }
-
-  try {
-    const response = await requestJson(loginApi, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'register', name, email, password })
-    });
-
-    showToast(response.message || 'Account created successfully.');
-    document.getElementById('register-name').value = '';
-    document.getElementById('register-email').value = '';
-    document.getElementById('register-password').value = '';
-    document.getElementById('show-rider-login').click();
-  } catch (error) {
-    showToast(error.message || 'Unable to create account.', 'error');
-  }
-}
-
 async function handleCreateFranchise(evt) {
   evt.preventDefault();
   const name = document.getElementById('rf-name').value.trim();
@@ -752,7 +798,11 @@ async function handleCreateFranchise(evt) {
       })
     });
 
-    showToast('Franchise application submitted.');
+    localFranchiseSubmission = true;
+    sessionStorage.setItem('franchiseRegistrationPending', 'true');
+    state.franchise = { ...state.franchise, name, status: 'Pending', registered: false, hasApplication: true };
+    renderFranchiseSummary();
+    showToast('Franchise registration submitted for LGU review.');
     evt.target.reset();
     document.querySelector('[data-close="screen-register-franchise"]').click();
     await refreshDashboard();
@@ -765,6 +815,9 @@ async function handleCreateDriver(evt) {
   evt.preventDefault();
   const name = document.getElementById('f-name').value.trim();
   const dob = document.getElementById('f-dob').value;
+  const gender = document.getElementById('f-gender').value;
+  const licenseNumber = document.getElementById('f-license-number').value.trim();
+  const orCrNumber = document.getElementById('f-or-cr-number').value.trim();
   const contact = document.getElementById('f-contact').value.trim();
   const address = document.getElementById('f-address').value.trim();
   const tricycleId = document.getElementById('f-tricycle').value || null;
@@ -772,8 +825,8 @@ async function handleCreateDriver(evt) {
   const fileInputOr = document.getElementById('f-or');
   const fileInputPresident = document.getElementById('f-president');
 
-  if (!name || !dob || !contact) {
-    showToast('Please provide your full name, date of birth, and contact number.', 'error');
+  if (!name || !dob || !gender || !licenseNumber || !orCrNumber || !contact) {
+    showToast('Please complete the driver information, license number, and OR/CR number.', 'error');
     return;
   }
 
@@ -782,6 +835,9 @@ async function handleCreateDriver(evt) {
       action: 'create',
       name,
       dob,
+      gender,
+      driver_license_number: licenseNumber,
+      or_cr_number: orCrNumber,
       contact,
       address,
       tricycle_id: tricycleId,
@@ -958,18 +1014,7 @@ function bindScreenActions() {
     input.type = password;
   });
 
-  document.getElementById('show-rider-register')?.addEventListener('click', () => {
-    document.getElementById('login-form').style.display = 'none';
-    document.getElementById('rider-register-form').style.display = 'block';
-  });
-
-  document.getElementById('show-rider-login')?.addEventListener('click', () => {
-    document.getElementById('rider-register-form').style.display = 'none';
-    document.getElementById('login-form').style.display = 'block';
-  });
-
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
-  document.getElementById('rider-register-form')?.addEventListener('submit', handleRegister);
   document.getElementById('register-franchise-form')?.addEventListener('submit', handleCreateFranchise);
   document.getElementById('renewal-form')?.addEventListener('submit', handleApplyRenewal);
   document.getElementById('add-driver-form')?.addEventListener('submit', handleCreateDriver);
@@ -985,6 +1030,9 @@ function bindScreenActions() {
     document.getElementById('f-license-exp').required = false;
     document.getElementById('f-name').value = driver.name || '';
     document.getElementById('f-contact').value = driver.contact || '';
+    document.getElementById('f-gender').value = driver.gender || '';
+    document.getElementById('f-license-number').value = driver.licenseNumber || '';
+    document.getElementById('f-or-cr-number').value = driver.orCrNumber || '';
     document.getElementById('f-address').value = driver.address || '';
     document.getElementById('f-tricycle').value = driver.tricycleId || '';
     document.querySelector('[data-close="detail-driver"]').click();
@@ -1051,7 +1099,6 @@ function bindScreenActions() {
       setAppVisible(false);
       setLoginError('');
       document.getElementById('login-form')?.reset();
-      document.getElementById('rider-register-form')?.reset();
       document.getElementById('login-password').value = '';
       document.getElementById('login-username').focus();
     } catch (error) {

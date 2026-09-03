@@ -178,6 +178,7 @@
             <tr>
               <th>Franchise</th>
               <th>Owner</th>
+              <th>Franchise Address</th>
               <th>Issue Date</th>
               <th>Expiry Date</th>
               <th>Tricycles</th>
@@ -284,8 +285,8 @@
           <input type="email" id="fOwnerEmail" placeholder="Select an Admin account" readonly required>
         </div>
         <div class="form-field full">
-          <label for="fAddress">Address</label>
-          <textarea id="fAddress" placeholder="Complete address"></textarea>
+          <label for="fAddress">Franchise Address</label>
+          <textarea id="fAddress" placeholder="Complete franchise address" required></textarea>
         </div>
         <div class="form-field">
           <label for="fIssueDate">Issue Date</label>
@@ -342,7 +343,7 @@
       <div class="view-item"><div class="vlabel">Franchise ID</div><div class="vvalue" id="vId">—</div></div>
       <div class="view-item"><div class="vlabel">Issue Date</div><div class="vvalue" id="vIssue">—</div></div>
       <div class="view-item"><div class="vlabel">Expiry Date</div><div class="vvalue" id="vExpiry">—</div></div>
-      <div class="view-item full"><div class="vlabel">Address</div><div class="vvalue" id="vAddress">—</div></div>
+      <div class="view-item full"><div class="vlabel">Franchise Address</div><div class="vvalue" id="vAddress">—</div></div>
     </div>
     <div class="vlabel view-section-label">Assigned Tricycles</div>
     <div class="assigned-trikes" id="vTrikes"></div>

@@ -427,6 +427,87 @@
   .empty-state svg { margin-bottom: 12px; opacity: 0.5; }
   .empty-state.hidden { display: none; }
 
+  /* ============ NOTIFICATION DETAIL MODAL ============ */
+  .notification-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(10,14,26,0.58);
+    z-index: 100;
+  }
+
+  .notification-modal-overlay.open { display: flex; }
+
+  .notification-modal {
+    width: min(680px, 100%);
+    max-height: min(620px, calc(100vh - 48px));
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(10,14,26,0.28);
+    padding: 28px;
+  }
+
+  .notification-modal-head,
+  .notification-modal-heading,
+  .notification-modal-footer {
+    display: flex;
+    align-items: center;
+  }
+
+  .notification-modal-head { justify-content: space-between; gap: 18px; }
+  .notification-modal-heading { gap: 14px; min-width: 0; }
+
+  .notification-modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .notification-modal-icon.severity-urgent { background: var(--red-bg); color: var(--red); }
+  .notification-modal-icon.severity-warning { background: var(--yellow-bg); color: var(--yellow-text); }
+  .notification-modal-icon.severity-info { background: #DCE7FB; color: var(--blue); }
+
+  .notification-modal-type {
+    color: var(--text-gray);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .notification-modal h2 { margin: 0; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+  .modal-close { border: 0; background: transparent; color: var(--text-gray); cursor: pointer; padding: 6px; }
+  .modal-close:hover { color: var(--text-navy); }
+
+  .notification-modal-meta {
+    border-top: 1px solid var(--border-gray);
+    border-bottom: 1px solid var(--border-gray);
+    color: var(--text-gray);
+    font-size: 13px;
+    margin: 24px 0;
+    padding: 12px 0;
+  }
+
+  .notification-modal-message {
+    color: var(--text-navy);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 120px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .notification-modal-footer { justify-content: flex-end; margin-top: 26px; }
+
   /* pagination */
   .pagination {
     display: flex;
@@ -591,6 +672,8 @@
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .topbar h1 { font-size: 22px; }
+    .notification-modal { padding: 20px; }
+    .notification-modal h2 { font-size: 18px; }
   }
 
   .admin-pill,

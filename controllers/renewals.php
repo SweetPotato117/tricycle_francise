@@ -40,7 +40,7 @@ function renewalPayload($data)
 		respond(['success' => false, 'message' => 'Selected franchise not found.'], 422);
 	}
 	$expiryYear = !empty($franchise['expiry_date']) ? (int) date('Y', strtotime($franchise['expiry_date'])) : 0;
-	$year = max((int) date('Y'), $expiryYear);
+	$year = $expiryYear > 0 ? $expiryYear - 1 : (int) date('Y');
 	$renewalDate = $year . '-01-01';
 	$dueDate = ($year + 1) . '-01-01';
 
@@ -58,6 +58,7 @@ function renewalPayload($data)
 
 function listRenewals()
 {
+	markExpiredFranchises();
 	ensureRenewalStatusSchema();
 	$renewals = getAllRecords('renewals', 'ORDER BY renewal_id DESC');
 	$franchises = getAllRecords('franchises', 'ORDER BY franchise_name');

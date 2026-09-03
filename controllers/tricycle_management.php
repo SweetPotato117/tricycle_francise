@@ -30,7 +30,11 @@ function currentAdminId()
 
 function isSuperAdmin()
 {
-	return ($_SESSION['admin_role'] ?? '') === 'Super Admin';
+	if (trim((string) ($_SESSION['admin_role'] ?? '')) === 'Super Admin') return true;
+	$adminId = currentAdminId();
+	if (!$adminId) return false;
+	$admin = getRecord('admins', 'admin_id = ? AND status = ?', [$adminId, 'Active']);
+	return trim((string) ($admin['role'] ?? '')) === 'Super Admin';
 }
 
 function ensureTricycleStatusColumn()

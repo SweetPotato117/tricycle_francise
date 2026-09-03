@@ -90,7 +90,7 @@
         ...group,
         requests: group.requests.map(request => ({
           ...request,
-          docs: (request.docs || []).map(document => ({ label: document.label, img: document.url }))
+          docs: (request.docs || []).map(document => ({ label: document.label, img: document.url, value: document.value }))
         }))
       }));
       updateStats();
@@ -285,12 +285,10 @@
         </div>
         <div class="request-desc">${r.description}</div>
         <div class="doc-strip">
-          ${r.docs.map(d => `
-            <div class="doc-thumb-wrap">
-              <img src="${d.img}" data-src="${d.img}" class="req-doc-thumb" title="Click to enlarge">
-              <div class="doc-caption">${d.label}</div>
-            </div>
-          `).join('')}
+          ${r.docs.map(d => d.value
+            ? `<div class="doc-thumb-wrap"><div class="doc-caption">${d.label}</div><strong>${d.value}</strong></div>`
+            : `<div class="doc-thumb-wrap"><img src="${d.img}" data-src="${d.img}" class="req-doc-thumb" title="Click to enlarge"><div class="doc-caption">${d.label}</div></div>`
+          ).join('')}
         </div>
         ${r.status === 'Pending' ? `
           <div class="request-actions">

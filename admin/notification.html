@@ -205,6 +205,29 @@
   </a>
 </nav>
 
+<!-- notification detail modal -->
+<div class="notification-modal-overlay" id="notificationModalOverlay" role="dialog" aria-modal="true" aria-labelledby="notificationModalTitle">
+  <div class="notification-modal">
+    <div class="notification-modal-head">
+      <div class="notification-modal-heading">
+        <div class="notification-modal-icon" id="notificationModalIcon"></div>
+        <div>
+          <div class="notification-modal-type" id="notificationModalType"></div>
+          <h2 id="notificationModalTitle"></h2>
+        </div>
+      </div>
+      <button class="modal-close" id="notificationModalClose" aria-label="Close notification details">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="notification-modal-meta" id="notificationModalMeta"></div>
+    <div class="notification-modal-message" id="notificationModalMessage"></div>
+    <div class="notification-modal-footer">
+      <button type="button" class="mark-all-btn" id="notificationModalDone">Close</button>
+    </div>
+  </div>
+</div>
+
   <script src="js/notification.js"></script>
 </body>
 </html>

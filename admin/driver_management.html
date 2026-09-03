@@ -263,6 +263,7 @@
         </div>
         <div class="form-field full">
           <label>Driver's License</label>
+          <input type="text" id="fLicenseNumber" placeholder="Driver's license number" required>
           <div class="file-field" data-upload-label="driverLicenseFile">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Upload driver's license (image or PDF)</span>
@@ -271,6 +272,7 @@
         </div>
         <div class="form-field">
           <label>OR/CR</label>
+          <input type="text" id="fOrCrNumber" placeholder="OR/CR number" required>
           <div class="file-field" data-upload-label="orCrFile">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Upload OR/CR</span>
@@ -311,6 +313,8 @@
       <div class="view-item"><div class="vlabel">Assigned Tricycle</div><div class="vvalue" id="vTricycle">—</div></div>
       <div class="view-item"><div class="vlabel">Driver ID</div><div class="vvalue" id="vId">—</div></div>
       <div class="view-item full"><div class="vlabel">Address</div><div class="vvalue" id="vAddress">—</div></div>
+      <div class="view-item"><div class="vlabel">Driver's License Number</div><div class="vvalue" id="vLicenseNumber">—</div></div>
+      <div class="view-item"><div class="vlabel">OR/CR Number</div><div class="vvalue" id="vOrCrNumber">—</div></div>
     </div>
     <div class="doc-list" id="driverDocuments">
       <div class="doc-row"><div class="doc-name">Driver's License</div><span class="doc-link">No file</span></div>

@@ -18,6 +18,12 @@
   const searchInput = document.getElementById('searchInput');
   const filterTabs = document.getElementById('filterTabs');
   const markAllBtn = document.getElementById('markAllBtn');
+  const notificationModalOverlay = document.getElementById('notificationModalOverlay');
+  const notificationModalIcon = document.getElementById('notificationModalIcon');
+  const notificationModalType = document.getElementById('notificationModalType');
+  const notificationModalTitle = document.getElementById('notificationModalTitle');
+  const notificationModalMeta = document.getElementById('notificationModalMeta');
+  const notificationModalMessage = document.getElementById('notificationModalMessage');
 
   let activeFilter = 'All';
   let searchTerm = '';
@@ -77,6 +83,42 @@
     if (diffHr < 24) return `${diffHr}h ago`;
     if (diffDay < 7) return `${diffDay}d ago`;
     return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function formatNotificationDate(iso) {
+    const date = new Date(iso);
+    return date.toLocaleString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+
+  function closeNotificationModal() {
+    notificationModalOverlay.classList.remove('open');
+  }
+
+  async function openNotificationModal(notification) {
+    if (!notification) return;
+
+    if (!notification.isRead) {
+      try {
+        await apiRequest({ action: 'read', id: notification.id });
+        notification.isRead = true;
+        updateStats();
+        render();
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+    }
+
+    notificationModalIcon.className = `notification-modal-icon severity-${notification.severity}`;
+    notificationModalIcon.innerHTML = severityIcon(notification.severity);
+    notificationModalType.textContent = notification.type;
+    notificationModalTitle.textContent = notification.title;
+    notificationModalMeta.textContent = `${formatNotificationDate(notification.createdAt)}${notification.related ? ` • ${notification.related}` : ''}`;
+    notificationModalMessage.textContent = notification.message;
+    notificationModalOverlay.classList.add('open');
   }
 
   function updateStats() {
@@ -158,14 +200,7 @@
 
       item.addEventListener('click', async (e) => {
         if (e.target.closest('.notif-actions')) return;
-        if (!n.isRead) {
-          try {
-            await apiRequest({ action: 'read', id: n.id });
-            n.isRead = true;
-            updateStats();
-            render();
-          } catch (error) { alert(error.message); }
-        }
+        await openNotificationModal(n);
       });
 
       notifList.appendChild(item);
@@ -212,6 +247,15 @@
       updateStats();
       render();
     } catch (error) { alert(error.message); }
+  });
+
+  document.getElementById('notificationModalClose').addEventListener('click', closeNotificationModal);
+  document.getElementById('notificationModalDone').addEventListener('click', closeNotificationModal);
+  notificationModalOverlay.addEventListener('click', (event) => {
+    if (event.target === notificationModalOverlay) closeNotificationModal();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeNotificationModal();
   });
 
   /* ---------- init ---------- */
