@@ -8,6 +8,18 @@
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
   }).catch(() => {});
 
+  function setSubmitLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   /* ---------- drawer (mobile sidebar) ---------- */
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('drawerOverlay');
@@ -263,6 +275,8 @@
       status: document.getElementById('fStatus').value,
       password: pw
     };
+    const submitButton = e.submitter;
+    setSubmitLoading(submitButton, true);
 
     try {
       await apiRequest({ action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}), ...payload });
@@ -271,6 +285,8 @@
     } catch (error) {
       passwordHint.textContent = error.message;
       passwordHint.classList.add('error');
+    } finally {
+      setSubmitLoading(submitButton, false);
     }
   });
 

@@ -6,6 +6,18 @@
   hamburgerBtn.addEventListener('click', openDrawer);
   overlay.addEventListener('click', closeDrawer);
 
+  function setActionLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Processing...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   function mockDocImage(label, tint) {
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
@@ -323,7 +335,7 @@
     fsModalBody.querySelectorAll('.req-doc-thumb').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.src)));
 
     fsModalBody.querySelectorAll('.req-approve-btn').forEach(btn => btn.addEventListener('click', () => {
-      approveRequest(Number(btn.dataset.reqId));
+      approveRequest(Number(btn.dataset.reqId), btn);
     }));
 
     fsModalBody.querySelectorAll('.req-deny-toggle-btn').forEach(btn => btn.addEventListener('click', () => {
@@ -346,35 +358,41 @@
         textarea.focus();
         return;
       }
-      denyRequest(reqId, reason);
+      denyRequest(reqId, reason, btn);
     }));
   }
 
-  async function approveRequest(reqId) {
+  async function approveRequest(reqId, button) {
     const g = franchiseGroups.find(x => x.id === currentGroupId);
     if (!g) return;
     const r = g.requests.find(x => x.id === reqId);
     if (!r) return;
+    setActionLoading(button, true);
     try {
       await pendingRequest({ action: 'approve', type: r.actionType, id: r.id });
       r.status = 'Approved'; r.denialReason = ''; renderFsModal(); updateStats(); render();
     } catch (error) { alert(error.message); }
+    finally { setActionLoading(button, false); }
   }
 
-  async function denyRequest(reqId, reason) {
+  async function denyRequest(reqId, reason, button) {
     const g = franchiseGroups.find(x => x.id === currentGroupId);
     if (!g) return;
     const r = g.requests.find(x => x.id === reqId);
     if (!r) return;
+    setActionLoading(button, true);
     try {
       await pendingRequest({ action: 'deny', type: r.actionType, id: r.id, reason });
       r.status = 'Denied'; r.denialReason = reason; renderFsModal(); updateStats(); render();
     } catch (error) { alert(error.message); }
+    finally { setActionLoading(button, false); }
   }
 
   approveAllBtn.addEventListener('click', async () => {
     const g = franchiseGroups.find(x => x.id === currentGroupId);
     if (!g) return;
+    setActionLoading(approveAllBtn, true);
+    try {
     for (const request of g.requests.filter(request => request.status === 'Pending')) {
       try {
         await pendingRequest({ action: 'approve', type: request.actionType, id: request.id });
@@ -384,6 +402,9 @@
     renderFsModal();
     updateStats();
     render();
+    } finally {
+      setActionLoading(approveAllBtn, false);
+    }
   });
 
   loadPendingRequests();

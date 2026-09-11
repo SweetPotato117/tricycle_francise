@@ -231,7 +231,6 @@ function createDriver($data) {
     $tricycleId = filter_var($data['tricycle_id'] ?? null, FILTER_VALIDATE_INT);
     if ($tricycleId !== false && $tricycleId !== null) validateActiveTricycle($tricycleId, $franchise['franchise_id']);
     $id = insertSomething('drivers', ['full_name' => trim($data['name']), 'contact_number' => trim($data['contact'] ?? ''), 'age' => $age, 'gender' => $gender, 'driver_license_number' => $licenseNumber, 'or_cr_number' => $orCrNumber, 'address' => trim($data['address'] ?? ''), 'driver_license' => saveDataUrlUpload($data['licenseData'] ?? '', 'driver_license') ?: 'Not provided', 'or_cr' => saveDataUrlUpload($data['orcrData'] ?? '', 'or_cr'), 'president_certificate' => saveDataUrlUpload($data['presidentsData'] ?? '', 'president_certificate'), 'status' => 'Pending']);
-    insertSomething('franchise_driver', ['franchise_id' => $franchise['franchise_id'], 'driver_id' => $id]);
     if ($tricycleId !== false && $tricycleId !== null) {
         deleteRecord('driver_tricycle', 'tricycle_id = ?', [$tricycleId]);
         insertSomething('driver_tricycle', ['driver_id' => $id, 'tricycle_id' => $tricycleId]);

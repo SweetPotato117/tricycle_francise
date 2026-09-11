@@ -8,6 +8,18 @@
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
   }).catch(() => {});
 
+  function setSubmitLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   /* ---------- drawer (mobile sidebar) ---------- */
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('drawerOverlay');
@@ -328,6 +340,8 @@
       receiptDataUrl: formReceipt.dataUrl,
       receipt: formReceipt.name
     };
+    const submitButton = e.submitter;
+    setSubmitLoading(submitButton, true);
 
     try {
       if (!payload.receiptDataUrl) throw new Error('Please attach the payment receipt before saving this renewal.');
@@ -336,6 +350,8 @@
       closeRenewalModal();
     } catch (error) {
       alert(error.message);
+    } finally {
+      setSubmitLoading(submitButton, false);
     }
   });
 

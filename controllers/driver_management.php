@@ -34,6 +34,12 @@ function currentAdminId()
 	return (int) ($_SESSION['admin_id'] ?? 0);
 }
 
+function currentAdminEmail()
+{
+	$admin = getRecord('admins', 'admin_id = ?', [currentAdminId()]);
+	return strtolower(trim((string) ($admin['email'] ?? $_SESSION['admin_email'] ?? '')));
+}
+
 function isSuperAdmin()
 {
 	if (trim((string) ($_SESSION['admin_role'] ?? '')) === 'Super Admin') return true;
@@ -115,6 +121,7 @@ function listDrivers()
 	}
 
 	foreach ($drivers as &$driver) {
+		$franchise = getRecord('franchise_driver', 'driver_id = ? ORDER BY assignment_id DESC LIMIT 1', [(int) $driver['driver_id']]);
 		$driver = [
 			'id' => (int) $driver['driver_id'],
 			'name' => $driver['full_name'],
@@ -125,6 +132,7 @@ function listDrivers()
 			'orCrNumber' => $driver['or_cr_number'] ?? '',
 			'address' => $driver['address'] ?? '',
 			'tricycle' => $assigned[(int) $driver['driver_id']] ?? 'Unassigned',
+			'franchiseId' => $franchise ? (int) $franchise['franchise_id'] : null,
 			'status' => $driver['status'],
 			'driverLicense' => uploadUrl($driver['driver_license']),
 			'orCr' => uploadUrl($driver['or_cr']),
@@ -133,7 +141,22 @@ function listDrivers()
 	}
 	unset($driver);
 
-	respond(['success' => true, 'drivers' => $drivers]);
+	$activeFranchises = getAllRecords('franchises', "WHERE renewal_status IN ('Active', 'Approved') ORDER BY franchise_name");
+	$franchisePayload = array_map(function ($franchise) {
+		return ['id' => (int) $franchise['franchise_id'], 'name' => $franchise['franchise_name'], 'owner' => $franchise['owner_name']];
+	}, $activeFranchises);
+	respond(['success' => true, 'drivers' => $drivers, 'franchises' => $franchisePayload]);
+}
+
+function saveFranchiseAssignment($driverId, $franchiseId)
+{
+	deleteRecord('franchise_driver', 'driver_id = ?', [$driverId]);
+	if (!$franchiseId) return;
+	$franchise = getRecord('franchises', "franchise_id = ? AND renewal_status IN ('Active', 'Approved')", [$franchiseId]);
+	if (!$franchise) {
+		respond(['success' => false, 'message' => 'Please select an active or approved franchise.'], 422);
+	}
+	insertSomething('franchise_driver', ['franchise_id' => $franchiseId, 'driver_id' => $driverId]);
 }
 
 try {

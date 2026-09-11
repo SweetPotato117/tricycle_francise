@@ -23,6 +23,10 @@
     --purple-text: #6B36D9;
   }
 
+  .submit-spinner { width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: submit-spin .7s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .is-loading { opacity: .8; cursor: wait; }
+  @keyframes submit-spin { to { transform: rotate(360deg); } }
+
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;

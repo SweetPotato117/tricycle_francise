@@ -8,6 +8,21 @@ if (location.protocol === 'file:') {
 const riderApi = '../controllers/rider_app.php';
 const loginApi = '../controllers/rider_login.php';
 
+function setSubmitLoading(form, loading) {
+  const button = form?.querySelector('button[type="submit"]');
+  if (!button) return;
+  if (loading) {
+    button.dataset.originalContent = button.innerHTML;
+    button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+    button.disabled = true;
+    button.classList.add('is-loading');
+  } else {
+    button.innerHTML = button.dataset.originalContent || button.innerHTML;
+    button.disabled = false;
+    button.classList.remove('is-loading');
+  }
+}
+
 const state = {
   profile: null,
   franchise: null,
@@ -690,6 +705,7 @@ async function handleApplyRenewal(evt) {
     showToast('Please upload the payment receipt photo.', 'error');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     const receiptDataUrl = await readFileAsDataUrl(file);
@@ -708,6 +724,8 @@ async function handleApplyRenewal(evt) {
     setActiveNav('renew');
   } catch (error) {
     showToast(error.message || 'Unable to submit renewal.', 'error');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 
@@ -753,6 +771,7 @@ async function handleLogin(evt) {
     setLoginError('Please enter both your email/username and password.');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     const response = await requestJson(loginApi, {
@@ -770,6 +789,8 @@ async function handleLogin(evt) {
   } catch (error) {
     setAppVisible(false);
     setLoginError(error.message || 'Unable to log in.');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 
@@ -784,6 +805,7 @@ async function handleCreateFranchise(evt) {
     showToast('Please complete the franchise form fields.', 'error');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     const receiptDataUrl = await readFileAsDataUrl(file);
@@ -808,6 +830,8 @@ async function handleCreateFranchise(evt) {
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to submit franchise application.', 'error');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 
@@ -829,6 +853,7 @@ async function handleCreateDriver(evt) {
     showToast('Please complete the driver information, license number, and OR/CR number.', 'error');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     const payload = {
@@ -867,6 +892,8 @@ async function handleCreateDriver(evt) {
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to save driver.', 'error');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 
@@ -885,6 +912,7 @@ async function handleCreateTricycle(evt) {
     showToast('Please complete all required tricycle details.', 'error');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     await requestJson(riderApi, {
@@ -913,6 +941,8 @@ async function handleCreateTricycle(evt) {
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to add tricycle.', 'error');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 
@@ -926,6 +956,7 @@ async function handleUpdateProfile(evt) {
     showToast('Name and email are required.', 'error');
     return;
   }
+  setSubmitLoading(evt.currentTarget, true);
 
   try {
     await requestJson(riderApi, {
@@ -944,6 +975,8 @@ async function handleUpdateProfile(evt) {
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to save profile.', 'error');
+  } finally {
+    setSubmitLoading(evt.currentTarget, false);
   }
 }
 

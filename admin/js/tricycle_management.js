@@ -8,6 +8,18 @@
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
   }).catch(() => {});
 
+  function setSubmitLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   /* ---------- drawer (mobile sidebar) ---------- */
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('drawerOverlay');
@@ -200,6 +212,8 @@
       franchise_id: document.getElementById('fFranchise').value || null,
       driver_id: document.getElementById('fDriver').value || null
     };
+    const submitButton = e.submitter;
+    setSubmitLoading(submitButton, true);
 
     try {
       await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
@@ -207,6 +221,8 @@
       closeTrikeModal();
     } catch (error) {
       alert(error.message);
+    } finally {
+      setSubmitLoading(submitButton, false);
     }
   });
 

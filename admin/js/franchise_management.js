@@ -8,6 +8,18 @@
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
   }).catch(() => {});
 
+  function setSubmitLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   /* ---------- drawer (mobile sidebar) ---------- */
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('drawerOverlay');
@@ -308,6 +320,8 @@
       receipt: formReceipt.name,
       receiptUploadedBy: formReceipt.uploadedBy
     };
+    const submitButton = e.submitter;
+    setSubmitLoading(submitButton, true);
 
     try {
       await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
@@ -315,6 +329,8 @@
       closeFranchiseModal();
     } catch (error) {
       alert(error.message);
+    } finally {
+      setSubmitLoading(submitButton, false);
     }
   });
 
@@ -438,8 +454,8 @@
       applicationEmptyState.classList.toggle('hidden', applications.length !== 0);
       applicationResultCount.textContent = `${applications.length} application${applications.length === 1 ? '' : 's'}`;
       applicationTableBody.querySelectorAll('.application-view').forEach(button => button.addEventListener('click', () => openApplicationModal(Number(button.dataset.id))));
-      applicationTableBody.querySelectorAll('.application-approve').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'approve-application')));
-      applicationTableBody.querySelectorAll('.application-reject').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'reject-application')));
+      applicationTableBody.querySelectorAll('.application-approve').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'approve-application', button)));
+      applicationTableBody.querySelectorAll('.application-reject').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'reject-application', button)));
     }
 
     function openApplicationModal(id) {
@@ -457,13 +473,18 @@
       applicationModalOverlay.classList.add('open');
     }
 
-    async function updateApplication(id, action) {
+    async function updateApplication(id, action, button) {
       if (!confirm(`Are you sure you want to ${action === 'approve-application' ? 'approve' : 'reject'} this application?`)) return;
-      const response = await fetch(franchiseApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id }) });
-      const result = await response.json();
-      if (!response.ok || !result.success) return alert(result.message || 'Unable to update application.');
-      await loadApplications();
-      await loadFranchises();
+      setSubmitLoading(button, true);
+      try {
+        const response = await fetch(franchiseApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id }) });
+        const result = await response.json();
+        if (!response.ok || !result.success) return alert(result.message || 'Unable to update application.');
+        await loadApplications();
+        await loadFranchises();
+      } finally {
+        setSubmitLoading(button, false);
+      }
     }
 
     function closeApplicationModal() { applicationModalOverlay.classList.remove('open'); }

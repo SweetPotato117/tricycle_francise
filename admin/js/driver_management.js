@@ -8,6 +8,18 @@
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
   }).catch(() => {});
 
+  function setSubmitLoading(button, loading) {
+    if (!button) return;
+    if (loading) {
+      button.dataset.originalContent = button.innerHTML;
+      button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+      button.disabled = true;
+    } else {
+      button.innerHTML = button.dataset.originalContent || button.innerHTML;
+      button.disabled = false;
+    }
+  }
+
   /* ---------- drawer (mobile sidebar) ---------- */
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('drawerOverlay');
@@ -150,6 +162,7 @@
     tableBody.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', async () => {
       const driver = drivers.find(d => d.id === Number(btn.dataset.id));
       if (!driver) return;
+      setSubmitLoading(btn, true);
       try {
         await apiRequest({ action: 'approve', id: driver.id });
         driver.status = 'Approved';
@@ -157,6 +170,8 @@
         render();
       } catch (error) {
         alert(error.message);
+      } finally {
+        setSubmitLoading(btn, false);
       }
     }));
   }
@@ -171,7 +186,6 @@
   });
 
   searchInput.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
-
   /* ---------- add / edit modal ---------- */
   const driverModalOverlay = document.getElementById('driverModalOverlay');
   const driverModalTitle = document.getElementById('driverModalTitle');
@@ -229,6 +243,8 @@
       address: document.getElementById('fAddress').value.trim(),
       tricycle: "Unassigned"
     };
+    const submitButton = e.submitter;
+    setSubmitLoading(submitButton, true);
 
     try {
       await apiRequest({ ...payload, ...driverFileData, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
@@ -236,6 +252,8 @@
       closeDriverModal();
     } catch (error) {
       alert(error.message);
+    } finally {
+      setSubmitLoading(submitButton, false);
     }
   });
 
