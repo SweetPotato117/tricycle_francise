@@ -1,5 +1,18 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
+if (!empty($_SESSION['admin_id']) && (!isset($_SESSION['login_source']) || $_SESSION['login_source'] === 'admin')) {
+    $_SESSION['login_source'] = 'admin';
+    $_SESSION['rider_id'] = (int) $_SESSION['admin_id'];
+    $_SESSION['rider_name'] = $_SESSION['admin_name'] ?? $_SESSION['admin_username'] ?? 'Admin';
+    $_SESSION['rider_email'] = $_SESSION['admin_email'] ?? '';
+}
 header('Content-Type: application/json; charset=utf-8');
 $modelsPath = __DIR__ . '/../models';
 set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
@@ -17,6 +30,13 @@ function ensureTricycleStatusColumn() {
     $check = mysqli_query($conn, "SHOW COLUMNS FROM tricycles LIKE 'status'");
     if ($check && mysqli_num_rows($check) === 0) {
         mysqli_query($conn, "ALTER TABLE tricycles ADD COLUMN status ENUM('Active','Inactive','Pending') NOT NULL DEFAULT 'Pending' AFTER plate_number");
+    }
+}
+function ensureDriverStatusColumn() {
+    global $conn;
+    $check = mysqli_query($conn, "SHOW COLUMNS FROM drivers LIKE 'status'");
+    if ($check && mysqli_num_rows($check) > 0) {
+        mysqli_query($conn, "ALTER TABLE drivers MODIFY COLUMN status ENUM('Pending','For Review','Approved','Inactive') DEFAULT 'Pending'");
     }
 }
 function ensureTricycleDocumentColumns() {
@@ -73,12 +93,14 @@ function getRenewalsForCurrentRider() {
             'createdAt' => $row['created_at'] ?? null,
             'confirmedAt' => $row['receipt_confirmed_at'] ?? null,
             'confirmedBy' => $row['receipt_confirmed_by'] ?? null,
+            'nextRenewalDate' => $row['due_date'] ?? null,
             'receiptPhoto' => $row['receipt_photo'] ?? null
         ];
     }, $rows);
 }
 function listData() {
     ensureOwnershipTables();
+    ensureDriverStatusColumn();
     ensureTricycleStatusColumn();
     ensureTricycleDocumentColumns();
     markExpiredFranchises();
@@ -230,7 +252,9 @@ function createDriver($data) {
     ensureOwnershipTables();
     $tricycleId = filter_var($data['tricycle_id'] ?? null, FILTER_VALIDATE_INT);
     if ($tricycleId !== false && $tricycleId !== null) validateActiveTricycle($tricycleId, $franchise['franchise_id']);
+    ensureDriverStatusColumn();
     $id = insertSomething('drivers', ['full_name' => trim($data['name']), 'contact_number' => trim($data['contact'] ?? ''), 'age' => $age, 'gender' => $gender, 'driver_license_number' => $licenseNumber, 'or_cr_number' => $orCrNumber, 'address' => trim($data['address'] ?? ''), 'driver_license' => saveDataUrlUpload($data['licenseData'] ?? '', 'driver_license') ?: 'Not provided', 'or_cr' => saveDataUrlUpload($data['orcrData'] ?? '', 'or_cr'), 'president_certificate' => saveDataUrlUpload($data['presidentsData'] ?? '', 'president_certificate'), 'status' => 'Pending']);
+    insertSomething('franchise_driver', ['franchise_id' => $franchise['franchise_id'], 'driver_id' => $id]);
     if ($tricycleId !== false && $tricycleId !== null) {
         deleteRecord('driver_tricycle', 'tricycle_id = ?', [$tricycleId]);
         insertSomething('driver_tricycle', ['driver_id' => $id, 'tricycle_id' => $tricycleId]);
@@ -383,10 +407,76 @@ function updateTricycle($data) {
     createNotification('Tricycle Submission Edited', "The pending tricycle submission for $brand ($plate) was edited by the rider.", 'Tricycle', 'warning', $adminEmail, $id, 'tricycle_submission_edited');
     respond(['success' => true]);
 }
+function cancelPendingSubmission($data) {
+    $franchise = ownedFranchise();
+    $type = trim((string) ($data['type'] ?? ''));
+    $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$franchise || !$id || !in_array($type, ['driver', 'tricycle'], true)) respond(['success' => false, 'message' => 'Pending submission not found.'], 404);
+
+    $franchiseName = $franchise['franchise_name'] ?? 'your franchise';
+    if ($type === 'driver') {
+        $assignment = getRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
+        $driver = getRecord('drivers', "driver_id = ? AND status IN (?, ?)", [$id, 'Pending', 'For Review']);
+        if (!$assignment || !$driver) respond(['success' => false, 'message' => 'Only pending driver submissions can be cancelled.'], 422);
+        deleteRecord('driver_tricycle', 'driver_id = ?', [$id]);
+        deleteRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
+        deleteRecord('drivers', 'driver_id = ?', [$id]);
+        $subject = 'rider ' . $driver['full_name'];
+        $relatedType = 'driver_submission_cancelled';
+    } else {
+        $assignment = getRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
+        $tricycle = getRecord('tricycles', 'tricycle_id = ?', [$id]);
+        $tricycleStatus = strtolower(trim((string) ($tricycle['status'] ?? '')));
+        if (!$assignment || !$tricycle || $tricycleStatus !== 'pending') respond(['success' => false, 'message' => 'Only pending tricycle submissions can be cancelled.'], 422);
+        deleteRecord('driver_tricycle', 'tricycle_id = ?', [$id]);
+        deleteRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
+        deleteRecord('tricycles', 'tricycle_id = ?', [$id]);
+        $subject = 'tricycle ' . ($tricycle['plate_number'] ?: 'Unit ' . $id);
+        $relatedType = 'tricycle_submission_cancelled';
+    }
+
+    $message = currentAccountName() . " cancelled application for \"$subject\" on \"$franchiseName\".";
+    foreach (getSuperAdminEmails() as $email) {
+        createNotification('Application Cancelled', $message, ucfirst($type), 'warning', $email, $id, $relatedType);
+    }
+    respond(['success' => true]);
+}
+function updateOwnedStatus($data) {
+    $franchise = ownedFranchise();
+    $type = trim((string) ($data['type'] ?? ''));
+    $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
+    $status = trim((string) ($data['status'] ?? ''));
+    if (!$franchise || !$id || !in_array($type, ['driver', 'tricycle'], true) || !in_array($status, ['Active', 'Inactive'], true)) respond(['success' => false, 'message' => 'Invalid status request.'], 422);
+
+    if ($type === 'driver') {
+        ensureDriverStatusColumn();
+        $assignment = getRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
+        $existing = getRecord('drivers', 'driver_id = ?', [$id]);
+        if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Driver not found in your franchise.'], 404);
+        if (($existing['status'] ?? '') === 'Pending' || ($existing['status'] ?? '') === 'For Review') respond(['success' => false, 'message' => 'Pending driver submissions must be cancelled instead.'], 422);
+        $storedStatus = $status === 'Active' ? 'Approved' : 'Inactive';
+        updateRecord('drivers', ['status' => $storedStatus], 'driver_id = ?', [$id]);
+        if ($storedStatus === 'Inactive') deleteRecord('driver_tricycle', 'driver_id = ?', [$id]);
+        $label = 'driver ' . $existing['full_name'];
+    } else {
+        ensureTricycleStatusColumn();
+        $assignment = getRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
+        $existing = getRecord('tricycles', 'tricycle_id = ?', [$id]);
+        if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Tricycle not found in your franchise.'], 404);
+        if (($existing['status'] ?? '') === 'Pending') respond(['success' => false, 'message' => 'Pending tricycle submissions must be cancelled instead.'], 422);
+        updateRecord('tricycles', ['status' => $status], 'tricycle_id = ?', [$id]);
+        if ($status === 'Inactive') deleteRecord('driver_tricycle', 'tricycle_id = ?', [$id]);
+        $label = 'tricycle ' . ($existing['plate_number'] ?: 'Unit ' . $id);
+    }
+    respond(['success' => true, 'label' => $label]);
+}
 try {
     $loginSource = $_SESSION['login_source'] ?? 'rider';
-    $accountEmail = $loginSource === 'admin' ? trim($_SESSION['admin_email'] ?? '') : trim($_SESSION['rider_email'] ?? '');
-    if (empty($_SESSION['rider_id']) || $accountEmail === '') respond(['success' => false, 'message' => 'Valid account login required.'], 401);
+    $hasAdminSession = $loginSource === 'admin' && !empty($_SESSION['admin_id']);
+    $hasRiderSession = $loginSource === 'rider'
+        && !empty($_SESSION['rider_id'])
+        && trim((string) ($_SESSION['rider_email'] ?? '')) !== '';
+    if (!$hasAdminSession && !$hasRiderSession) respond(['success' => false, 'message' => 'Valid account login required.'], 401);
     if ($_SERVER['REQUEST_METHOD'] === 'GET') listData();
     $data = requestData();
     if (($data['action'] ?? '') === 'create-franchise') createFranchiseApplication($data);
@@ -396,6 +486,8 @@ try {
     if (($data['action'] ?? '') === 'assign-driver') assignDriver($data);
     if (($data['action'] ?? '') === 'create-tricycle') createTricycle($data);
     if (($data['action'] ?? '') === 'update-tricycle') updateTricycle($data);
+    if (($data['action'] ?? '') === 'cancel-submission') cancelPendingSubmission($data);
+    if (($data['action'] ?? '') === 'update-status') updateOwnedStatus($data);
     if (($data['action'] ?? '') === 'update-profile') {
         $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
         if (!$id || $id !== (int) $_SESSION['rider_id']) respond(['success' => false, 'message' => 'Profile not found.'], 404);

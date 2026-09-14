@@ -46,7 +46,7 @@ if (!$passwordMatches) {
     exit;
 }
 
-if (($admin['role'] ?? '') !== 'Super Admin') {
+if (!in_array($admin['role'] ?? '', ['Admin', 'Super Admin'], true)) {
     header('Location: ../index.html?error=restricted');
     exit;
 }

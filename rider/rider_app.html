@@ -6,7 +6,7 @@
 <title>Franchise Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../rider/css/rider_app.css">
+<link rel="stylesheet" href="../rider/css/rider_app.css?v=20260914">
 
 
 </head>
@@ -351,6 +351,10 @@
 
     </div>
   </div>
+  <div class="action-bar">
+    <button class="btn secondary" data-close="detail-tricycle">Close</button>
+    <button class="btn danger rider-hidden" id="td-status-btn" type="button">Manage Status</button>
+  </div>
 </div>
 
 <!-- ============ DRIVER DETAIL (full screen) ============ -->
@@ -424,6 +428,7 @@
     <select id="dd-tricycle-select" class="detail-action-select rider-hidden" aria-label="Select tricycle to assign"></select>
     <button class="btn primary rider-hidden" id="dd-assign-btn">Assign Tricycle</button>
     <button class="btn primary rider-hidden" id="dd-edit-btn">Edit Driver</button>
+    <button class="btn danger rider-hidden" id="dd-status-btn" type="button">Manage Status</button>
   </div>
 </div>
 
@@ -666,6 +671,31 @@
     <button id="viewer-zoom-out" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6"/></svg></button>
     <button id="viewer-reset" aria-label="Reset zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
     <button id="viewer-zoom-in" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg></button>
+  </div>
+</div>
+
+<div class="tfms-loader-overlay" id="tfms-loader-overlay" aria-hidden="true">
+  <div class="tfms-loader-card" role="status" aria-live="polite">
+    <div class="tfms-ring-wrap">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="tfms-ring-bg" cx="60" cy="60" r="52"></circle>
+        <circle class="tfms-ring-fg" cx="60" cy="60" r="52"></circle>
+      </svg>
+      <div class="tfms-ring-icon">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="16" cy="46" r="7" stroke="currentColor" stroke-width="3"/>
+          <circle cx="48" cy="46" r="7" stroke="currentColor" stroke-width="3"/>
+          <path d="M16 46 L26 24 H40 L48 46" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M26 24 L22 14 H14" stroke="var(--gold-500)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M40 24 L44 34 H52" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <rect x="30" y="30" width="10" height="8" rx="1.5" stroke="var(--gold-500)" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <div class="tfms-pct">0%</div>
+    </div>
+    <p class="tfms-title">Submitting your request</p>
+    <p class="tfms-step">Validating details...</p>
+    <div class="tfms-bar-track"><div class="tfms-bar-fill"></div></div>
   </div>
 </div>
 

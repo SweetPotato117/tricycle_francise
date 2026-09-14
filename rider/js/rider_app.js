@@ -7,6 +7,96 @@ if (location.protocol === 'file:') {
 
 const riderApi = '../controllers/rider_app.php';
 const loginApi = '../controllers/rider_login.php';
+const TFMS_LOADER_ENABLED = false;
+
+const TFMSLoader = (() => {
+  let frameId = null;
+  let finishTimer = null;
+  let stepTimer = null;
+  let resolveDone = null;
+
+  function getElements() {
+    const overlay = document.getElementById('tfms-loader-overlay');
+    if (!overlay) return null;
+    return {
+      overlay,
+      ring: overlay.querySelector('.tfms-ring-fg'),
+      percent: overlay.querySelector('.tfms-pct'),
+      bar: overlay.querySelector('.tfms-bar-fill'),
+      step: overlay.querySelector('.tfms-step'),
+      icon: overlay.querySelector('.tfms-ring-icon')
+    };
+  }
+
+  function hide() {
+    if (frameId) cancelAnimationFrame(frameId);
+    clearTimeout(finishTimer);
+    clearTimeout(stepTimer);
+    frameId = null;
+    const elements = getElements();
+    if (elements) {
+      elements.overlay.classList.remove('tfms-visible', 'tfms-loader-success');
+      elements.overlay.setAttribute('aria-hidden', 'true');
+    }
+    if (resolveDone) {
+      resolveDone();
+      resolveDone = null;
+    }
+  }
+
+  function show(options = {}) {
+    hide();
+    if (!TFMS_LOADER_ENABLED) return Promise.resolve();
+    const elements = getElements();
+    if (!elements) return Promise.resolve();
+
+    const donePromise = new Promise((resolve) => { resolveDone = resolve; });
+    const duration = options.duration || 8000;
+    const steps = options.steps || ['Validating details...', 'Uploading documents...', 'Sending to LGU for review...', 'Almost done...'];
+    const circumference = 2 * Math.PI * 52;
+    const start = performance.now();
+    let lastStep = 0;
+    elements.ring.style.strokeDasharray = circumference;
+    elements.ring.style.strokeDashoffset = circumference;
+    elements.percent.textContent = '0%';
+    elements.bar.style.width = '0%';
+    elements.step.textContent = steps[0] || '';
+    elements.icon.innerHTML = '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="16" cy="46" r="7" stroke="currentColor" stroke-width="3"/><circle cx="48" cy="46" r="7" stroke="currentColor" stroke-width="3"/><path d="M16 46 L26 24 H40 L48 46" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M26 24 L22 14 H14" stroke="var(--gold-500)" stroke-width="3" stroke-linecap="round"/><path d="M40 24 L44 34 H52" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="30" y="30" width="10" height="8" rx="1.5" stroke="var(--gold-500)" stroke-width="2.5"/></svg>';
+    elements.overlay.querySelector('.tfms-title').textContent = options.title || 'Submitting your request';
+    elements.overlay.classList.add('tfms-visible');
+    elements.overlay.setAttribute('aria-hidden', 'false');
+
+    function finish() {
+      elements.overlay.classList.add('tfms-loader-success');
+      elements.step.textContent = 'Submitted successfully';
+      elements.icon.innerHTML = '<svg class="tfms-check" viewBox="0 0 44 44" fill="none" aria-hidden="true"><circle cx="22" cy="22" r="20"/><path d="M13 22.5 L19 28.5 L31 15.5"/></svg>';
+      finishTimer = window.setTimeout(hide, 700);
+    }
+
+    function frame(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const percent = Math.round(progress * 100);
+      elements.ring.style.strokeDashoffset = circumference * (1 - progress);
+      elements.bar.style.width = `${percent}%`;
+      elements.percent.textContent = `${percent}%`;
+      const stepIndex = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+      if (stepIndex !== lastStep) {
+        elements.step.style.opacity = '0';
+        stepTimer = window.setTimeout(() => {
+          elements.step.textContent = steps[stepIndex] || '';
+          elements.step.style.opacity = '1';
+        }, 120);
+        lastStep = stepIndex;
+      }
+      if (progress < 1) frameId = requestAnimationFrame(frame);
+      else finish();
+    }
+    frameId = requestAnimationFrame(frame);
+    return donePromise;
+  }
+
+  return { show, hide };
+})();
 
 function setSubmitLoading(form, loading) {
   const button = form?.querySelector('button[type="submit"]');
@@ -23,6 +113,34 @@ function setSubmitLoading(form, loading) {
   }
 }
 
+function setButtonLoading(button, loading, label = 'Processing...') {
+  if (!button) return;
+  if (loading) {
+    button.dataset.originalContent = button.innerHTML;
+    button.innerHTML = `<span class="submit-spinner" aria-hidden="true"></span><span>${label}</span>`;
+    button.disabled = true;
+    button.classList.add('is-loading');
+  } else {
+    button.innerHTML = button.dataset.originalContent || button.innerHTML;
+    button.disabled = false;
+    button.classList.remove('is-loading');
+  }
+}
+
+function setFieldRequired(id, required) {
+  const field = document.getElementById(id);
+  if (field) field.required = required;
+}
+
+function setElementText(id, text) {
+  const element = document.getElementById(id);
+  if (element) element.textContent = text;
+}
+
+function clickElement(selector) {
+  document.querySelector(selector)?.click();
+}
+
 const state = {
   profile: null,
   franchise: null,
@@ -35,6 +153,7 @@ const state = {
   activeDriverFilter: 'all',
   tricycleSearch: '',
   driverSearch: '',
+  lastRefreshError: null,
   refreshTimer: null
 };
 
@@ -42,21 +161,24 @@ let localFranchiseSubmission = sessionStorage.getItem('franchiseRegistrationPend
 
 let editingTricycleId = null;
 let editingDriverId = null;
+let pendingStatusAction = null;
+let statusActionBusy = false;
 
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', duration = 2200, animationClass = '') {
   const toast = document.getElementById('toast');
   const toastMsg = document.getElementById('toast-msg');
   if (!toast || !toastMsg) return;
 
-  toast.classList.remove('error', 'success');
+  toast.classList.remove('error', 'success', 'tricycle-registration-success');
   toast.classList.add(type === 'error' ? 'error' : 'success');
+  if (animationClass) toast.classList.add(animationClass);
   toastMsg.textContent = message;
   toast.classList.add('show');
 
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => {
     toast.classList.remove('show');
-  }, 2200);
+  }, duration);
 }
 
 function setLoginError(message) {
@@ -150,7 +272,8 @@ function readFileAsDataUrl(file) {
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
-    credentials: 'same-origin',
+    credentials: 'include',
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {})
@@ -162,7 +285,9 @@ async function requestJson(url, options = {}) {
   const payload = contentType.includes('application/json') ? await response.json() : { success: false, message: 'Unexpected response from server.' };
 
   if (!response.ok || !payload.success) {
-    throw new Error(payload.message || 'Request failed.');
+    const error = new Error(payload.message || 'Request failed.');
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -220,9 +345,11 @@ function getRenewalTimelineEntries(renewal) {
   if (statusKey.includes('confirm')) {
     steps.push({
       key: 'success',
-      title: 'Renewal success',
+      title: 'Renewal successful',
       date: confirmedDate,
-      detail: 'Your franchise renewal has been successfully approved and is now active.',
+      detail: renewal?.nextRenewalDate
+        ? `Your franchise renewal has been successfully approved. Your next renewal date is ${formatDate(renewal.nextRenewalDate)}.`
+        : 'Your franchise renewal has been successfully approved and is now active.',
       tone: 'success',
       label: 'Success'
     });
@@ -387,6 +514,17 @@ function buildTricycleListItem(tricycle) {
     const editButton = document.getElementById('td-more');
     editButton.style.display = normalizeStatus(tricycle.status).toLowerCase() === 'pending' ? 'inline-flex' : 'none';
     editButton.dataset.tricycleId = tricycle.id;
+    const statusButton = document.getElementById('td-status-btn');
+    if (statusButton) {
+      const status = normalizeStatus(tricycle.status).toLowerCase();
+      statusButton.style.display = 'inline-flex';
+      statusButton.disabled = false;
+      statusButton.textContent = status === 'pending' ? 'Cancel Submission' : status === 'inactive' ? 'Set Active' : 'Set Inactive';
+      statusButton.className = `btn ${status === 'inactive' ? 'primary' : 'danger'}`;
+      statusButton.dataset.statusType = 'tricycle';
+      statusButton.dataset.statusId = tricycle.id;
+      statusButton.dataset.currentStatus = status;
+    }
     detail.classList.add('active');
   });
   return card;
@@ -452,6 +590,17 @@ function buildDriverListItem(driver) {
     const editButton = document.getElementById('dd-edit-btn');
     editButton.style.display = normalizeStatus(driver.status).toLowerCase() === 'pending' ? 'inline-flex' : 'none';
     editButton.dataset.driverId = driver.id;
+    const statusButton = document.getElementById('dd-status-btn');
+    if (statusButton) {
+      const status = normalizeStatus(driver.status).toLowerCase();
+      statusButton.style.display = 'inline-flex';
+      statusButton.disabled = false;
+      statusButton.textContent = status === 'pending' ? 'Cancel Submission' : status === 'inactive' ? 'Set Active' : 'Set Inactive';
+      statusButton.className = `btn ${status === 'inactive' ? 'primary' : 'danger'}`;
+      statusButton.dataset.statusType = 'driver';
+      statusButton.dataset.statusId = driver.id;
+      statusButton.dataset.currentStatus = status;
+    }
     const assignButton = document.getElementById('dd-assign-btn');
     const tricycleSelect = document.getElementById('dd-tricycle-select');
     const canAssign = !driver.tricycleId && normalizeStatus(driver.status).toLowerCase() !== 'inactive';
@@ -517,6 +666,84 @@ async function assignDriver(driverId, tricycleId) {
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to assign tricycle.', 'error');
+  }
+}
+
+async function cancelSubmission(type, id, confirmed = false) {
+  const label = type === 'driver' ? 'driver' : 'tricycle';
+  if (!confirmed && !window.confirm(`Cancel this pending ${label} submission?`)) return;
+  try {
+    await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'cancel-submission', type, id }) });
+    showToast(`${label[0].toUpperCase() + label.slice(1)} submission cancelled.`);
+    document.querySelector(`[data-close="detail-${type}"]`)?.click();
+    await refreshDashboard();
+  } catch (error) {
+    showToast(error.message || `Unable to cancel ${label} submission.`, 'error');
+  }
+}
+
+async function updateOwnedStatus(type, id, status) {
+  const label = type === 'driver' ? 'driver' : 'tricycle';
+  try {
+    await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'update-status', type, id, status }) });
+    showToast(`${label[0].toUpperCase() + label.slice(1)} set to ${status.toLowerCase()}.`);
+    document.querySelector(`[data-close="detail-${type}"]`)?.click();
+    await refreshDashboard();
+  } catch (error) {
+    showToast(error.message || `Unable to update ${label} status.`, 'error');
+  }
+}
+
+function closeStatusConfirmation() {
+  document.getElementById('confirm-overlay')?.classList.remove('active');
+  pendingStatusAction = null;
+}
+
+function openStatusConfirmation(type, id, currentStatus) {
+  if (statusActionBusy) return;
+  const overlay = document.getElementById('confirm-overlay');
+  const title = document.getElementById('confirm-title');
+  const description = document.getElementById('confirm-desc');
+  const confirmButton = document.getElementById('confirm-ok');
+  if (!overlay || !title || !description || !confirmButton) return;
+
+  const label = type === 'driver' ? 'driver' : 'tricycle';
+  const nextStatus = currentStatus === 'inactive' ? 'Active' : 'Inactive';
+  pendingStatusAction = { type, id, currentStatus };
+  title.textContent = currentStatus === 'pending' ? `Cancel ${label} submission?` : `Set ${label} ${nextStatus.toLowerCase()}?`;
+  description.textContent = currentStatus === 'pending'
+    ? `This will cancel the pending ${label} submission.`
+    : `This will set this ${label} to ${nextStatus.toLowerCase()}.`;
+  confirmButton.textContent = currentStatus === 'pending' ? 'Cancel Submission' : `Set ${nextStatus}`;
+  overlay.classList.add('active');
+}
+
+function handleStatusButtonClick(event) {
+  const button = event.currentTarget;
+  const type = button.dataset.statusType;
+  const id = Number(button.dataset.statusId);
+  const currentStatus = button.dataset.currentStatus;
+  if (!type || !id || !currentStatus) return;
+  openStatusConfirmation(type, id, currentStatus);
+}
+
+async function handleStatusConfirmation() {
+  const action = pendingStatusAction;
+  const confirmButton = document.getElementById('confirm-ok');
+  if (!action || statusActionBusy) return;
+
+  statusActionBusy = true;
+  setButtonLoading(confirmButton, true, action.currentStatus === 'pending' ? 'Cancelling...' : 'Updating...');
+  try {
+    if (action.currentStatus === 'pending') {
+      await cancelSubmission(action.type, action.id, true);
+      return;
+    }
+    await updateOwnedStatus(action.type, action.id, action.currentStatus === 'inactive' ? 'Active' : 'Inactive');
+  } finally {
+    closeStatusConfirmation();
+    statusActionBusy = false;
+    setButtonLoading(confirmButton, false);
   }
 }
 
@@ -604,19 +831,23 @@ function renderRenewals() {
   const renewalOpeningDate = new Date(`${renewalYear}-01-01T00:00:00`);
   const renewalWindowOpen = new Date() >= renewalOpeningDate;
   const currentYearProcessing = hasCurrentYearRenewal && !currentYearStatus.includes('confirm') && !currentYearStatus.includes('approv') && !currentYearStatus.includes('reject') && !currentYearStatus.includes('fail') && !currentYearStatus.includes('declin');
+  const currentYearSuccessful = hasCurrentYearRenewal && (currentYearStatus.includes('confirm') || currentYearStatus.includes('approv'));
+  const expiryText = state.franchise?.expiry ? formatDate(state.franchise.expiry) : 'the franchise expiry date';
+  const nextRenewalText = currentYearRenewal?.nextRenewalDate ? formatDate(currentYearRenewal.nextRenewalDate) : expiryText;
   const expiryDate = state.franchise?.expiry ? new Date(`${state.franchise.expiry}T00:00:00`) : null;
   const daysUntilExpiry = expiryDate && !Number.isNaN(expiryDate.getTime())
     ? Math.ceil((expiryDate - new Date(new Date().setHours(0, 0, 0, 0))) / 86400000)
     : null;
-  const expiryText = state.franchise?.expiry ? formatDate(state.franchise.expiry) : 'the franchise expiry date';
   const currentStatus = normalizeStatus(state.franchise?.status || 'Pending');
   const franchiseExpired = hasRegisteredFranchise && (currentStatus === 'Expired' || (daysUntilExpiry !== null && daysUntilExpiry < 0));
   const franchiseExpiringSoon = hasRegisteredFranchise && currentStatus === 'Active' && daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 20;
   if (renewalStateBanner && renewalStateLabel && renewalStateMessage) {
-    renewalStateBanner.className = `application-status renewal-state-banner ${franchiseExpired ? 'not-approved' : franchiseExpiringSoon ? 'warning' : currentYearProcessing ? 'processing-status' : hasCurrentYearRenewal ? 'not-approved' : ''}`;
+    renewalStateBanner.className = `application-status renewal-state-banner ${currentYearSuccessful ? 'approved' : franchiseExpired ? 'not-approved' : franchiseExpiringSoon ? 'warning' : currentYearProcessing ? 'processing-status' : hasCurrentYearRenewal ? 'not-approved' : ''}`;
     renewalStateLabel.textContent = hasCurrentYearRenewal ? 'Renewal Status' : 'Franchise Status';
     renewalStateMessage.textContent = !hasRegisteredFranchise
       ? 'Renewal applications become available after your franchise registration has been approved by the LGU.'
+      : currentYearSuccessful
+      ? `Renewal successful. Your next renewal date is ${nextRenewalText}.`
       : franchiseExpired
       ? `Your franchise expired on ${expiryText} and is no longer active. Please submit a renewal application.`
       : franchiseExpiringSoon
@@ -706,6 +937,7 @@ async function handleApplyRenewal(evt) {
     return;
   }
   setSubmitLoading(evt.currentTarget, true);
+  const loaderDone = TFMSLoader.show();
 
   try {
     const receiptDataUrl = await readFileAsDataUrl(file);
@@ -718,11 +950,13 @@ async function handleApplyRenewal(evt) {
       })
     });
 
+    await loaderDone;
     evt.target.reset();
     showToast('Renewal application submitted for LGU review.');
     await refreshDashboard();
     setActiveNav('renew');
   } catch (error) {
+    TFMSLoader.hide();
     showToast(error.message || 'Unable to submit renewal.', 'error');
   } finally {
     setSubmitLoading(evt.currentTarget, false);
@@ -732,6 +966,7 @@ async function handleApplyRenewal(evt) {
 async function refreshDashboard(resetNavigation = true) {
   try {
     const result = await requestJson(riderApi, { method: 'GET' });
+    state.lastRefreshError = null;
     state.profile = result.profile || {};
     state.franchise = result.franchise || {};
     if (!state.franchise.registered && localFranchiseSubmission) {
@@ -754,6 +989,7 @@ async function refreshDashboard(resetNavigation = true) {
     if (resetNavigation) setActiveNav('franchise');
     return true;
   } catch (error) {
+    state.lastRefreshError = error;
     if (resetNavigation) {
       setAppVisible(false);
       setLoginError('');
@@ -782,7 +1018,8 @@ async function handleLogin(evt) {
     setLoginError('');
     const dashboardLoaded = await refreshDashboard();
     if (!dashboardLoaded) {
-      setLoginError('Session could not be restored. Please try again.');
+      const detail = state.lastRefreshError?.message || 'The dashboard request was rejected.';
+      setLoginError(`Unable to load your account: ${detail}`);
       return;
     }
     showToast(`${response.name || 'Welcome'} logged in successfully.`);
@@ -806,6 +1043,7 @@ async function handleCreateFranchise(evt) {
     return;
   }
   setSubmitLoading(evt.currentTarget, true);
+  const loaderDone = TFMSLoader.show();
 
   try {
     const receiptDataUrl = await readFileAsDataUrl(file);
@@ -820,6 +1058,7 @@ async function handleCreateFranchise(evt) {
       })
     });
 
+    await loaderDone;
     localFranchiseSubmission = true;
     sessionStorage.setItem('franchiseRegistrationPending', 'true');
     state.franchise = { ...state.franchise, name, status: 'Pending', registered: false, hasApplication: true };
@@ -829,6 +1068,7 @@ async function handleCreateFranchise(evt) {
     document.querySelector('[data-close="screen-register-franchise"]').click();
     await refreshDashboard();
   } catch (error) {
+    TFMSLoader.hide();
     showToast(error.message || 'Unable to submit franchise application.', 'error');
   } finally {
     setSubmitLoading(evt.currentTarget, false);
@@ -854,6 +1094,7 @@ async function handleCreateDriver(evt) {
     return;
   }
   setSubmitLoading(evt.currentTarget, true);
+  const loaderDone = TFMSLoader.show();
 
   try {
     const payload = {
@@ -880,17 +1121,19 @@ async function handleCreateDriver(evt) {
       })
     });
 
+    await loaderDone;
     showToast(editingDriverId ? 'Driver submission updated.' : 'Driver registered successfully.');
     editingDriverId = null;
-    document.getElementById('driver-form-title').textContent = 'Add Driver';
-    document.getElementById('driver-submit-label').textContent = 'Register Driver';
-    document.getElementById('f-license').required = true;
-    document.getElementById('f-dob').required = true;
-    document.getElementById('f-license-exp').required = true;
+    setElementText('driver-form-title', 'Add Driver');
+    setElementText('driver-submit-label', 'Register Driver');
+    setFieldRequired('f-license', true);
+    setFieldRequired('f-dob', true);
+    setFieldRequired('f-license-exp', true);
     evt.target.reset();
-    document.querySelector('[data-close="screen-add-driver"]').click();
+    clickElement('[data-close="screen-add-driver"]');
     await refreshDashboard();
   } catch (error) {
+    TFMSLoader.hide();
     showToast(error.message || 'Unable to save driver.', 'error');
   } finally {
     setSubmitLoading(evt.currentTarget, false);
@@ -905,16 +1148,18 @@ async function handleCreateTricycle(evt) {
   const engine = document.getElementById('t-engine').value.trim();
   const chassis = document.getElementById('t-chassis').value.trim();
   const color = document.getElementById('t-color').value.trim();
-  const orDocument = await readFileAsDataUrl(document.getElementById('t-or')?.files?.[0] || null);
 
   const driverId = document.getElementById('t-driver').value || null;
   if (!brand || !sticker || !plate || !engine || !chassis || !color) {
+    TFMSLoader.hide();
     showToast('Please complete all required tricycle details.', 'error');
     return;
   }
   setSubmitLoading(evt.currentTarget, true);
+  const loaderDone = TFMSLoader.show();
 
   try {
+    const orDocument = await readFileAsDataUrl(document.getElementById('t-or')?.files?.[0] || null);
     await requestJson(riderApi, {
       method: 'POST',
       body: JSON.stringify({
@@ -932,15 +1177,27 @@ async function handleCreateTricycle(evt) {
       })
     });
 
-    showToast(editingTricycleId ? 'Tricycle submission updated.' : 'Tricycle added successfully.');
+    await loaderDone;
+    showToast(
+      editingTricycleId ? 'Tricycle submission updated.' : 'Tricycle added successfully.',
+      'success',
+      editingTricycleId ? 2200 : 8000,
+      editingTricycleId ? '' : 'tricycle-registration-success'
+    );
     editingTricycleId = null;
-    document.getElementById('tricycle-form-title').textContent = 'Add Tricycle';
-    document.getElementById('tricycle-submit-label').textContent = 'Register Tricycle';
+    setElementText('tricycle-form-title', 'Add Tricycle');
+    setElementText('tricycle-submit-label', 'Register Tricycle');
     evt.target.reset();
-    document.querySelector('[data-close="screen-add-tricycle"]').click();
+    clickElement('[data-close="screen-add-tricycle"]');
     await refreshDashboard();
   } catch (error) {
-    showToast(error.message || 'Unable to add tricycle.', 'error');
+    TFMSLoader.hide();
+    if (error.status === 401) {
+      setAppVisible(false);
+      setLoginError('Your session expired. Please sign in again.');
+    } else {
+      showToast(error.message || 'Unable to add tricycle.', 'error');
+    }
   } finally {
     setSubmitLoading(evt.currentTarget, false);
   }
@@ -957,6 +1214,7 @@ async function handleUpdateProfile(evt) {
     return;
   }
   setSubmitLoading(evt.currentTarget, true);
+  const loaderDone = TFMSLoader.show();
 
   try {
     await requestJson(riderApi, {
@@ -970,10 +1228,12 @@ async function handleUpdateProfile(evt) {
       })
     });
 
+    await loaderDone;
     showToast('Profile updated successfully.');
     document.querySelector('[data-close="screen-account-settings"]').click();
     await refreshDashboard();
   } catch (error) {
+    TFMSLoader.hide();
     showToast(error.message || 'Unable to save profile.', 'error');
   } finally {
     setSubmitLoading(evt.currentTarget, false);
@@ -1051,6 +1311,10 @@ function bindScreenActions() {
   document.getElementById('register-franchise-form')?.addEventListener('submit', handleCreateFranchise);
   document.getElementById('renewal-form')?.addEventListener('submit', handleApplyRenewal);
   document.getElementById('add-driver-form')?.addEventListener('submit', handleCreateDriver);
+  document.getElementById('td-status-btn')?.addEventListener('click', handleStatusButtonClick);
+  document.getElementById('dd-status-btn')?.addEventListener('click', handleStatusButtonClick);
+  document.getElementById('confirm-cancel')?.addEventListener('click', closeStatusConfirmation);
+  document.getElementById('confirm-ok')?.addEventListener('click', handleStatusConfirmation);
   document.getElementById('dd-edit-btn')?.addEventListener('click', () => {
     const driver = state.drivers.find((item) => String(item.id) === String(document.getElementById('dd-edit-btn').dataset.driverId));
     if (!driver || normalizeStatus(driver.status).toLowerCase() !== 'pending') return;
@@ -1058,9 +1322,9 @@ function bindScreenActions() {
     document.getElementById('driver-form-title').textContent = 'Edit Driver Submission';
     document.getElementById('driver-submit-label').textContent = 'Save Changes';
     document.getElementById('add-driver-form').reset();
-    document.getElementById('f-license').required = false;
-    document.getElementById('f-dob').required = false;
-    document.getElementById('f-license-exp').required = false;
+    setFieldRequired('f-license', false);
+    setFieldRequired('f-dob', false);
+    setFieldRequired('f-license-exp', false);
     document.getElementById('f-name').value = driver.name || '';
     document.getElementById('f-contact').value = driver.contact || '';
     document.getElementById('f-gender').value = driver.gender || '';
@@ -1079,7 +1343,7 @@ function bindScreenActions() {
     document.getElementById('tricycle-form-title').textContent = 'Edit Tricycle Submission';
     document.getElementById('tricycle-submit-label').textContent = 'Save Changes';
     document.getElementById('add-tricycle-form').reset();
-    document.getElementById('t-or').required = false;
+    setFieldRequired('t-or', false);
     document.getElementById('t-brand').value = tricycle.brand || '';
     document.getElementById('t-unit').value = tricycle.unit || '';
     document.getElementById('t-plate').value = tricycle.plate || '';
@@ -1102,9 +1366,9 @@ function bindScreenActions() {
     editingDriverId = null;
     document.getElementById('driver-form-title').textContent = 'Add Driver';
     document.getElementById('driver-submit-label').textContent = 'Register Driver';
-    document.getElementById('f-license').required = true;
-    document.getElementById('f-dob').required = true;
-    document.getElementById('f-license-exp').required = true;
+    setFieldRequired('f-license', true);
+    setFieldRequired('f-dob', true);
+    setFieldRequired('f-license-exp', true);
     const screen = document.getElementById('screen-add-driver');
     if (screen) screen.classList.add('active');
   });
@@ -1113,7 +1377,7 @@ function bindScreenActions() {
     editingTricycleId = null;
     document.getElementById('tricycle-form-title').textContent = 'Add Tricycle';
     document.getElementById('tricycle-submit-label').textContent = 'Register Tricycle';
-    document.getElementById('t-or').required = true;
+    setFieldRequired('t-or', true);
     const screen = document.getElementById('screen-add-tricycle');
     if (screen) screen.classList.add('active');
   });
