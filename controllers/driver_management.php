@@ -228,6 +228,19 @@ try {
 		respond(['success' => true]);
 	}
 
+	if ($action === 'delete' && $id) {
+		$existing = getRecord('drivers', 'driver_id = ?', [$id]);
+		if (!$existing) respond(['success' => false, 'message' => 'Driver not found.'], 404);
+		if (!isSuperAdmin() && (int) $existing['admin_id'] !== currentAdminId()) respond(['success' => false, 'message' => 'You can only delete your own driver records.'], 403);
+		$riderEmail = getRiderEmailByDriverId($id);
+		$adminEmail = getAdminEmailByDriverId($id) ?: getAdminEmail();
+		deleteRecord('driver_tricycle', 'driver_id = ?', [$id]);
+		deleteRecord('franchise_driver', 'driver_id = ?', [$id]);
+		deleteRecord('drivers', 'driver_id = ?', [$id]);
+		triggerDriverRemovalNotification($id, $existing['full_name'], $riderEmail, $adminEmail);
+		respond(['success' => true]);
+	}
+
 	respond(['success' => false, 'message' => 'Invalid request.'], 400);
 } catch (Throwable $error) {
 	respond(['success' => false, 'message' => 'Unable to process driver request.'], 500);

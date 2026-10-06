@@ -207,6 +207,8 @@
     const payload = {
       brand: document.getElementById('fBrand').value.trim(),
       sticker: document.getElementById('fSticker').value.trim(),
+      plate: document.getElementById('fPlate').value.trim(),
+      engine: document.getElementById('fEngine').value.trim(),
       chassis: document.getElementById('fChassis').value.trim(),
       color: document.getElementById('fColor').value.trim(),
       franchise_id: document.getElementById('fFranchise').value || null,
@@ -270,13 +272,17 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async (e) => {
     if (deletingId != null) {
+      const confirmButton = e.currentTarget;
+      setSubmitLoading(confirmButton, true);
       try {
         await apiRequest({ action: 'delete', id: deletingId });
         await loadTricycles();
       } catch (error) {
         alert(error.message);
+      } finally {
+        setSubmitLoading(confirmButton, false);
       }
     }
     closeDeleteModal();

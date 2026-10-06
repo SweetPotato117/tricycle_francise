@@ -109,6 +109,13 @@ if (!$validRider) {
         loginResponse(['success' => false, 'message' => 'Wrong password or account not found.'], 401);
     }
 
+    $updateStmt = mysqli_prepare($conn, 'UPDATE admins SET last_login = NOW() WHERE admin_id = ?');
+    if ($updateStmt) {
+        mysqli_stmt_bind_param($updateStmt, 'i', $admin['admin_id']);
+        mysqli_stmt_execute($updateStmt);
+        mysqli_stmt_close($updateStmt);
+    }
+
     session_regenerate_id(true);
     $_SESSION['admin_id'] = (int) $admin['admin_id'];
     $_SESSION['admin_username'] = $admin['username'];

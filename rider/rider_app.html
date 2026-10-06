@@ -55,6 +55,47 @@
         <button type="submit" class="login-submit">Sign In</button>
       </form>
 
+      <form id="signup-form" class="rider-hidden" novalidate>
+        <div class="login-error" id="signup-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span id="signup-error-msg">Please complete all fields.</span>
+        </div>
+
+        <div class="login-field">
+          <label for="signup-name">Full Name</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+            <input type="text" id="signup-name" placeholder="Enter your full name" autocomplete="name">
+          </div>
+        </div>
+
+        <div class="login-field">
+          <label for="signup-email">Email Address</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <input type="email" id="signup-email" placeholder="Enter your email address" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="login-field">
+          <label for="signup-password">Password</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="signup-password" placeholder="At least 8 characters" autocomplete="new-password">
+            <button type="button" class="login-eye" id="signup-toggle-pw" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="login-submit">Create Account</button>
+      </form>
+
+      <div class="login-row login-switch">
+        <span id="auth-switch-text">Don't have an account?</span>
+        <button type="button" class="login-forgot" id="auth-switch-btn">Sign Up</button>
+      </div>
+
       <div class="login-footer">
         <p>Tricycle Franchise Management System</p>
       </div>
@@ -262,6 +303,12 @@
         </div>
       </div>
     </div>
+    <div class="notif-marquee" role="status" aria-live="polite">
+      <div class="notif-marquee-track">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>Didn't receive the email? Check your <strong>spam folder</strong>.</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>Didn't receive the email? Check your <strong>spam folder</strong>.</span>
+      </div>
+    </div>
     <div class="container notification-list" id="notification-list"></div>
   </section>
 
@@ -353,6 +400,7 @@
   </div>
   <div class="action-bar">
     <button class="btn secondary" data-close="detail-tricycle">Close</button>
+    <button class="btn danger rider-hidden" id="td-remove-btn" type="button">Remove</button>
     <button class="btn danger rider-hidden" id="td-status-btn" type="button">Manage Status</button>
   </div>
 </div>
@@ -428,6 +476,7 @@
     <select id="dd-tricycle-select" class="detail-action-select rider-hidden" aria-label="Select tricycle to assign"></select>
     <button class="btn primary rider-hidden" id="dd-assign-btn">Assign Tricycle</button>
     <button class="btn primary rider-hidden" id="dd-edit-btn">Edit Driver</button>
+    <button class="btn danger rider-hidden" id="dd-remove-btn" type="button">Remove</button>
     <button class="btn danger rider-hidden" id="dd-status-btn" type="button">Manage Status</button>
   </div>
 </div>

@@ -327,6 +327,23 @@
   </div>
 </div>
 
+<!-- ===== DELETE CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="deleteModalOverlay">
+  <div class="modal modal-narrow">
+    <div class="modal-head">
+      <h2>Remove Driver</h2>
+      <button class="modal-close" id="deleteModalClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="confirm-text">Are you sure you want to remove <b id="deleteTargetName">this driver</b>? Any tricycle assignment linked to this driver will be unassigned. This cannot be undone.</p>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="deleteCancelBtn">Cancel</button>
+      <button type="button" class="btn-danger" id="deleteConfirmBtn">Remove</button>
+    </div>
+  </div>
+</div>
+
   <script src="js/driver_management.js"></script>
 </body>
 </html>

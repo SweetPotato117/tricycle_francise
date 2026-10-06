@@ -190,6 +190,31 @@ function setLoginError(message) {
   errorBox.style.display = message ? 'flex' : 'none';
 }
 
+function setSignupError(message) {
+  const errorBox = document.getElementById('signup-error');
+  const errorMsg = document.getElementById('signup-error-msg');
+  if (!errorBox || !errorMsg) return;
+
+  errorMsg.textContent = message || 'Please complete all fields.';
+  errorBox.style.display = message ? 'flex' : 'none';
+}
+
+function setAuthMode(mode) {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  const switchText = document.getElementById('auth-switch-text');
+  const switchBtn = document.getElementById('auth-switch-btn');
+  if (!loginForm || !signupForm) return;
+
+  const isSignup = mode === 'signup';
+  loginForm.classList.toggle('rider-hidden', isSignup);
+  signupForm.classList.toggle('rider-hidden', !isSignup);
+  if (switchText) switchText.textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
+  if (switchBtn) switchBtn.textContent = isSignup ? 'Sign In' : 'Sign Up';
+  setLoginError('');
+  setSignupError('');
+}
+
 function setAppVisible(visible) {
   const app = document.getElementById('app');
   const loginScreen = document.getElementById('login-screen');
@@ -512,8 +537,14 @@ function buildTricycleListItem(tricycle) {
       image.closest('.doc-item')?.addEventListener('click', () => openDocumentViewer(image.src, image.alt));
     });
     const editButton = document.getElementById('td-more');
-    editButton.style.display = normalizeStatus(tricycle.status).toLowerCase() === 'pending' ? 'inline-flex' : 'none';
+    editButton.style.display = 'inline-flex';
     editButton.dataset.tricycleId = tricycle.id;
+    const removeButton = document.getElementById('td-remove-btn');
+    if (removeButton) {
+      const status = normalizeStatus(tricycle.status).toLowerCase();
+      removeButton.style.display = status === 'pending' ? 'none' : 'inline-flex';
+      removeButton.dataset.tricycleId = tricycle.id;
+    }
     const statusButton = document.getElementById('td-status-btn');
     if (statusButton) {
       const status = normalizeStatus(tricycle.status).toLowerCase();
@@ -588,8 +619,14 @@ function buildDriverListItem(driver) {
       image.closest('.doc-item')?.addEventListener('click', () => openDocumentViewer(image.src, image.alt));
     });
     const editButton = document.getElementById('dd-edit-btn');
-    editButton.style.display = normalizeStatus(driver.status).toLowerCase() === 'pending' ? 'inline-flex' : 'none';
+    editButton.style.display = 'inline-flex';
     editButton.dataset.driverId = driver.id;
+    const removeButton = document.getElementById('dd-remove-btn');
+    if (removeButton) {
+      const status = normalizeStatus(driver.status).toLowerCase();
+      removeButton.style.display = status === 'pending' ? 'none' : 'inline-flex';
+      removeButton.dataset.driverId = driver.id;
+    }
     const statusButton = document.getElementById('dd-status-btn');
     if (statusButton) {
       const status = normalizeStatus(driver.status).toLowerCase();
@@ -694,6 +731,18 @@ async function updateOwnedStatus(type, id, status) {
   }
 }
 
+async function removeOwnedRecord(type, id) {
+  const label = type === 'driver' ? 'driver' : 'tricycle';
+  try {
+    await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'remove-record', type, id }) });
+    showToast(`${label[0].toUpperCase() + label.slice(1)} removed successfully.`);
+    document.querySelector(`[data-close="detail-${type}"]`)?.click();
+    await refreshDashboard();
+  } catch (error) {
+    showToast(error.message || `Unable to remove ${label}.`, 'error');
+  }
+}
+
 function closeStatusConfirmation() {
   document.getElementById('confirm-overlay')?.classList.remove('active');
   pendingStatusAction = null;
@@ -709,12 +758,28 @@ function openStatusConfirmation(type, id, currentStatus) {
 
   const label = type === 'driver' ? 'driver' : 'tricycle';
   const nextStatus = currentStatus === 'inactive' ? 'Active' : 'Inactive';
-  pendingStatusAction = { type, id, currentStatus };
+  pendingStatusAction = { kind: 'status', type, id, currentStatus };
   title.textContent = currentStatus === 'pending' ? `Cancel ${label} submission?` : `Set ${label} ${nextStatus.toLowerCase()}?`;
   description.textContent = currentStatus === 'pending'
     ? `This will cancel the pending ${label} submission.`
     : `This will set this ${label} to ${nextStatus.toLowerCase()}.`;
   confirmButton.textContent = currentStatus === 'pending' ? 'Cancel Submission' : `Set ${nextStatus}`;
+  overlay.classList.add('active');
+}
+
+function openRemoveConfirmation(type, id) {
+  if (statusActionBusy) return;
+  const overlay = document.getElementById('confirm-overlay');
+  const title = document.getElementById('confirm-title');
+  const description = document.getElementById('confirm-desc');
+  const confirmButton = document.getElementById('confirm-ok');
+  if (!overlay || !title || !description || !confirmButton) return;
+
+  const label = type === 'driver' ? 'driver' : 'tricycle';
+  pendingStatusAction = { kind: 'remove', type, id };
+  title.textContent = `Remove ${label}?`;
+  description.textContent = `This will permanently remove this ${label} from your franchise and notify the LGU. This cannot be undone.`;
+  confirmButton.textContent = 'Remove';
   overlay.classList.add('active');
 }
 
@@ -733,6 +798,17 @@ async function handleStatusConfirmation() {
   if (!action || statusActionBusy) return;
 
   statusActionBusy = true;
+  if (action.kind === 'remove') {
+    setButtonLoading(confirmButton, true, 'Removing...');
+    try {
+      await removeOwnedRecord(action.type, action.id);
+    } finally {
+      closeStatusConfirmation();
+      statusActionBusy = false;
+      setButtonLoading(confirmButton, false);
+    }
+    return;
+  }
   setButtonLoading(confirmButton, true, action.currentStatus === 'pending' ? 'Cancelling...' : 'Updating...');
   try {
     if (action.currentStatus === 'pending') {
@@ -925,6 +1001,7 @@ function hydrateProfile() {
 
 async function handleApplyRenewal(evt) {
   evt.preventDefault();
+  const form = evt.currentTarget;
   const franchise = state.franchise || {};
   if (!franchise.registered || !franchise.id) {
     showToast('You need a registered franchise before applying for renewal.', 'error');
@@ -936,7 +1013,7 @@ async function handleApplyRenewal(evt) {
     showToast('Please upload the payment receipt photo.', 'error');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
@@ -951,7 +1028,7 @@ async function handleApplyRenewal(evt) {
     });
 
     await loaderDone;
-    evt.target.reset();
+    form.reset();
     showToast('Renewal application submitted for LGU review.');
     await refreshDashboard();
     setActiveNav('renew');
@@ -959,7 +1036,7 @@ async function handleApplyRenewal(evt) {
     TFMSLoader.hide();
     showToast(error.message || 'Unable to submit renewal.', 'error');
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
   }
 }
 
@@ -1000,6 +1077,7 @@ async function refreshDashboard(resetNavigation = true) {
 
 async function handleLogin(evt) {
   evt.preventDefault();
+  const form = evt.currentTarget;
   const username = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
 
@@ -1007,7 +1085,7 @@ async function handleLogin(evt) {
     setLoginError('Please enter both your email/username and password.');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  setSubmitLoading(form, true);
 
   try {
     const response = await requestJson(loginApi, {
@@ -1027,12 +1105,52 @@ async function handleLogin(evt) {
     setAppVisible(false);
     setLoginError(error.message || 'Unable to log in.');
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
+  }
+}
+
+async function handleSignup(evt) {
+  evt.preventDefault();
+  const form = evt.currentTarget;
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+
+  if (!name || !email || !password) {
+    setSignupError('Please complete all fields.');
+    return;
+  }
+  if (password.length < 8) {
+    setSignupError('Password must be at least 8 characters.');
+    return;
+  }
+  setSubmitLoading(form, true);
+
+  try {
+    const response = await requestJson(loginApi, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'register', name, email, password })
+    });
+
+    setSignupError('');
+    const dashboardLoaded = await refreshDashboard();
+    if (!dashboardLoaded) {
+      const detail = state.lastRefreshError?.message || 'The dashboard request was rejected.';
+      setSignupError(`Unable to load your account: ${detail}`);
+      return;
+    }
+    showToast(`${response.name || 'Welcome'} account created successfully.`);
+  } catch (error) {
+    setAppVisible(false);
+    setSignupError(error.message || 'Unable to create your account.');
+  } finally {
+    setSubmitLoading(form, false);
   }
 }
 
 async function handleCreateFranchise(evt) {
   evt.preventDefault();
+  const form = evt.currentTarget;
   const name = document.getElementById('rf-name').value.trim();
   const owner = document.getElementById('rf-owner').value.trim();
   const address = document.getElementById('rf-address').value.trim();
@@ -1042,7 +1160,7 @@ async function handleCreateFranchise(evt) {
     showToast('Please complete the franchise form fields.', 'error');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
@@ -1064,14 +1182,14 @@ async function handleCreateFranchise(evt) {
     state.franchise = { ...state.franchise, name, status: 'Pending', registered: false, hasApplication: true };
     renderFranchiseSummary();
     showToast('Franchise registration submitted for LGU review.');
-    evt.target.reset();
+    form.reset();
     document.querySelector('[data-close="screen-register-franchise"]').click();
     await refreshDashboard();
   } catch (error) {
     TFMSLoader.hide();
     showToast(error.message || 'Unable to submit franchise application.', 'error');
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
   }
 }
 
@@ -1093,7 +1211,8 @@ async function handleCreateDriver(evt) {
     showToast('Please complete the driver information, license number, and OR/CR number.', 'error');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  const form = evt.currentTarget;
+  setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
@@ -1129,14 +1248,14 @@ async function handleCreateDriver(evt) {
     setFieldRequired('f-license', true);
     setFieldRequired('f-dob', true);
     setFieldRequired('f-license-exp', true);
-    evt.target.reset();
+    form.reset();
     clickElement('[data-close="screen-add-driver"]');
     await refreshDashboard();
   } catch (error) {
     TFMSLoader.hide();
     showToast(error.message || 'Unable to save driver.', 'error');
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
   }
 }
 
@@ -1155,7 +1274,8 @@ async function handleCreateTricycle(evt) {
     showToast('Please complete all required tricycle details.', 'error');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  const form = evt.currentTarget;
+  setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
@@ -1187,7 +1307,7 @@ async function handleCreateTricycle(evt) {
     editingTricycleId = null;
     setElementText('tricycle-form-title', 'Add Tricycle');
     setElementText('tricycle-submit-label', 'Register Tricycle');
-    evt.target.reset();
+    form.reset();
     clickElement('[data-close="screen-add-tricycle"]');
     await refreshDashboard();
   } catch (error) {
@@ -1199,7 +1319,7 @@ async function handleCreateTricycle(evt) {
       showToast(error.message || 'Unable to add tricycle.', 'error');
     }
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
   }
 }
 
@@ -1213,7 +1333,8 @@ async function handleUpdateProfile(evt) {
     showToast('Name and email are required.', 'error');
     return;
   }
-  setSubmitLoading(evt.currentTarget, true);
+  const form = evt.currentTarget;
+  setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
@@ -1236,7 +1357,7 @@ async function handleUpdateProfile(evt) {
     TFMSLoader.hide();
     showToast(error.message || 'Unable to save profile.', 'error');
   } finally {
-    setSubmitLoading(evt.currentTarget, false);
+    setSubmitLoading(form, false);
   }
 }
 
@@ -1307,17 +1428,38 @@ function bindScreenActions() {
     input.type = password;
   });
 
+  document.getElementById('signup-toggle-pw')?.addEventListener('click', () => {
+    const input = document.getElementById('signup-password');
+    const password = input.type === 'password' ? 'text' : 'password';
+    input.type = password;
+  });
+
+  document.getElementById('auth-switch-btn')?.addEventListener('click', () => {
+    const signupForm = document.getElementById('signup-form');
+    const isSignup = !signupForm?.classList.contains('rider-hidden');
+    setAuthMode(isSignup ? 'login' : 'signup');
+  });
+
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+  document.getElementById('signup-form')?.addEventListener('submit', handleSignup);
   document.getElementById('register-franchise-form')?.addEventListener('submit', handleCreateFranchise);
   document.getElementById('renewal-form')?.addEventListener('submit', handleApplyRenewal);
   document.getElementById('add-driver-form')?.addEventListener('submit', handleCreateDriver);
   document.getElementById('td-status-btn')?.addEventListener('click', handleStatusButtonClick);
   document.getElementById('dd-status-btn')?.addEventListener('click', handleStatusButtonClick);
+  document.getElementById('td-remove-btn')?.addEventListener('click', () => {
+    const id = document.getElementById('td-remove-btn').dataset.tricycleId;
+    if (id) openRemoveConfirmation('tricycle', Number(id));
+  });
+  document.getElementById('dd-remove-btn')?.addEventListener('click', () => {
+    const id = document.getElementById('dd-remove-btn').dataset.driverId;
+    if (id) openRemoveConfirmation('driver', Number(id));
+  });
   document.getElementById('confirm-cancel')?.addEventListener('click', closeStatusConfirmation);
   document.getElementById('confirm-ok')?.addEventListener('click', handleStatusConfirmation);
   document.getElementById('dd-edit-btn')?.addEventListener('click', () => {
     const driver = state.drivers.find((item) => String(item.id) === String(document.getElementById('dd-edit-btn').dataset.driverId));
-    if (!driver || normalizeStatus(driver.status).toLowerCase() !== 'pending') return;
+    if (!driver) return;
     editingDriverId = driver.id;
     document.getElementById('driver-form-title').textContent = 'Edit Driver Submission';
     document.getElementById('driver-submit-label').textContent = 'Save Changes';
@@ -1338,7 +1480,7 @@ function bindScreenActions() {
   document.getElementById('add-tricycle-form')?.addEventListener('submit', handleCreateTricycle);
   document.getElementById('td-more')?.addEventListener('click', () => {
     const tricycle = state.tricycles.find((item) => String(item.id) === String(document.getElementById('td-more').dataset.tricycleId));
-    if (!tricycle || normalizeStatus(tricycle.status).toLowerCase() !== 'pending') return;
+    if (!tricycle) return;
     editingTricycleId = tricycle.id;
     document.getElementById('tricycle-form-title').textContent = 'Edit Tricycle Submission';
     document.getElementById('tricycle-submit-label').textContent = 'Save Changes';

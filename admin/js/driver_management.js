@@ -135,6 +135,11 @@
         </button>`;
       }
 
+      actionButtons += `
+        <button class="icon-btn danger delete-btn" data-id="${d.id}" title="Remove">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>`;
+
       tr.innerHTML = `
         <td>
           <div class="driver-cell">
@@ -159,6 +164,7 @@
 
     tableBody.querySelectorAll('.view-btn').forEach(btn => btn.addEventListener('click', () => openViewModal(Number(btn.dataset.id))));
     tableBody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEditModal(Number(btn.dataset.id))));
+    tableBody.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => openDeleteModal(Number(btn.dataset.id))));
     tableBody.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', async () => {
       const driver = drivers.find(d => d.id === Number(btn.dataset.id));
       if (!driver) return;
@@ -291,6 +297,40 @@
   document.getElementById('viewModalClose').addEventListener('click', closeViewModal);
   document.getElementById('viewCloseBtn').addEventListener('click', closeViewModal);
   viewModalOverlay.addEventListener('click', (e) => { if (e.target === viewModalOverlay) closeViewModal(); });
+
+  /* ---------- delete modal ---------- */
+  const deleteModalOverlay = document.getElementById('deleteModalOverlay');
+  let deletingId = null;
+
+  function openDeleteModal(id) {
+    const d = drivers.find(x => x.id === id);
+    if (!d) return;
+    deletingId = id;
+    document.getElementById('deleteTargetName').textContent = d.name;
+    deleteModalOverlay.classList.add('open');
+  }
+
+  function closeDeleteModal() { deleteModalOverlay.classList.remove('open'); deletingId = null; }
+
+  document.getElementById('deleteModalClose').addEventListener('click', closeDeleteModal);
+  document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
+  deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
+
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async (e) => {
+    if (deletingId != null) {
+      const confirmButton = e.currentTarget;
+      setSubmitLoading(confirmButton, true);
+      try {
+        await apiRequest({ action: 'delete', id: deletingId });
+        await loadDrivers();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setSubmitLoading(confirmButton, false);
+      }
+    }
+    closeDeleteModal();
+  });
 
   /* ---------- init ---------- */
   loadDrivers();

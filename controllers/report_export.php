@@ -1,4 +1,13 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$sheetPassword = $_POST['sheet_password'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !is_string($sheetPassword) || strlen($sheetPassword) < 8) {
+    http_response_code(400);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('A sheet password of at least 8 characters is required.');
+}
+
 require_once __DIR__ . '/../models/functions.php';
 
 function reportDateRange($type, $value)
@@ -90,8 +99,8 @@ function assignmentDateMap($records, $idField, $dateField)
     return $map;
 }
 
-$type = $_GET['type'] ?? 'month';
-$value = $_GET['value'] ?? '';
+$type = $_POST['type'] ?? 'month';
+$value = $_POST['value'] ?? '';
 [$start, $end] = reportDateRange($type, $value);
 
 $tricycles = getAllRecords('tricycles', 'ORDER BY tricycle_id DESC');
@@ -183,14 +192,11 @@ foreach ($tricycles as $tricycle) {
 
 usort($reportRows, fn($left, $right) => strcmp($left['record_date'], $right['record_date']));
 
-$filename = 'tricycle_driver_franchise_report_' . $type . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $value ?: date('Y-m-d')) . '.xls';
-header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+$filename = 'tricycle_driver_franchise_report_' . $type . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $value ?: date('Y-m-d')) . '.xlsx';
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Pragma: no-cache');
 header('Expires: 0');
-
-echo "\xEF\xBB\xBF";
-$fp = fopen('php://output', 'w');
 
 $headers = [
     'Operator Name',
@@ -207,10 +213,11 @@ $headers = [
     'Toda',
     'TODA Address'
 ];
-fputcsv($fp, $headers);
+
+$exportRows = [$headers];
 
 foreach ($reportRows as $row) {
-    fputcsv($fp, [
+    $exportRows[] = [
         $row['operator_name'],
         $row['brand'],
         $row['engine_number'],
@@ -224,11 +231,11 @@ foreach ($reportRows as $row) {
         $row['driver_address'],
         $row['toda'],
         $row['franchise_address']
-    ]);
+    ];
 }
 
 foreach ($franchiseAddressRows as $franchiseAddress) {
-    fputcsv($fp, [
+    $exportRows[] = [
         '',
         '',
         '',
@@ -242,8 +249,23 @@ foreach ($franchiseAddressRows as $franchiseAddress) {
         '',
         $franchiseAddress['name'],
         $franchiseAddress['address']
-    ]);
+    ];
 }
 
-fclose($fp);
+$spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setTitle('Report');
+$sheet->fromArray($exportRows, null, 'A1');
+
+$lastCell = $sheet->getHighestColumn() . $sheet->getHighestRow();
+$sheet->getStyle('A1:' . $lastCell)->getProtection()->setLocked(
+    \PhpOffice\PhpSpreadsheet\Style\Protection::PROTECTION_PROTECTED
+);
+
+$sheet->getProtection()->setPassword($sheetPassword);
+unset($sheetPassword);
+$sheet->getProtection()->setSheet(true);
+
+$writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+$writer->save('php://output');
 exit;

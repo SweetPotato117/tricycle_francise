@@ -478,6 +478,13 @@ button{font-family:inherit;}
 }
 
 /* Notifications */
+.notif-marquee{margin:0 16px 14px; overflow:hidden; position:relative; border-radius:12px; background:linear-gradient(90deg, var(--gold-500), var(--gold-600)); box-shadow:var(--shadow-sm);}
+.notif-marquee-track{display:flex; width:max-content; white-space:nowrap; animation:notif-marquee-scroll 16s linear infinite;}
+.notif-marquee-track span{display:flex; align-items:center; gap:8px; padding:10px 32px; font-size:12.5px; font-weight:600; color:var(--navy-900);}
+.notif-marquee-track svg{width:16px; height:16px; flex:none;}
+.notif-marquee-track strong{text-decoration:underline;}
+@keyframes notif-marquee-scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+@media (prefers-reduced-motion: reduce){.notif-marquee-track{animation:none;}}
 .notif-card{display:flex; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:13px; box-shadow:var(--shadow-sm);}
 .notif-card.unread{border-left:3px solid var(--gold-500);}
 .notif-icon{width:38px; height:38px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center;}
@@ -610,6 +617,8 @@ button{font-family:inherit;}
 
 .login-row{display:flex; justify-content:flex-end; margin:-6px 0 20px;}
 .login-forgot{font-size:12.5px; color:var(--navy-500); font-weight:600; text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Inter';}
+.login-switch{justify-content:center; gap:6px; margin:18px 0 0;}
+.login-switch span{font-size:12.5px; color:var(--ink-600); font-family:'Inter';}
 
 .login-error{
   display:none; align-items:center; gap:8px; background:var(--expired-bg); color:var(--expired-fg);

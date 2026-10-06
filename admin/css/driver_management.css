@@ -360,6 +360,8 @@
   .icon-btn.approve:hover { background: var(--green-bg); }
   .icon-btn.reject { color: var(--red); border-color: #F4C2C4; }
   .icon-btn.reject:hover { background: var(--red-bg); }
+  .icon-btn.danger { color: var(--red); border-color: #F4C2C4; }
+  .icon-btn.danger:hover { background: var(--red-bg); }
 
   .empty-state {
     text-align: center;
@@ -443,6 +445,8 @@
 
   .modal-close:hover { background: #E0E2E7; }
 
+  .modal-narrow { max-width: 420px; }
+
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -520,6 +524,22 @@
   }
 
   .btn-primary:hover { background: var(--blue-dark); }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14.5px;
+    padding: 11px 22px;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+
+  .btn-danger:hover { background: #cf3438; }
+
+  .confirm-text { font-size: 14.5px; color: var(--text-gray); line-height: 1.5; }
+  .confirm-text b { color: var(--text-navy); }
 
   /* view modal */
   .view-grid {

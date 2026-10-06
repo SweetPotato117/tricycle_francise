@@ -243,7 +243,7 @@
     Tricycles
   </a>
   <a href="pending.html" class="bn-item">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2-2V5a2 2 1 0 0 1 2-2h11"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Pending Registrations
   </a>
   <a href="franchise_management.html" class="bn-item active">
@@ -359,12 +359,12 @@
 <div class="modal-overlay" id="deleteModalOverlay">
   <div class="modal modal-narrow">
     <div class="modal-head">
-      <h2>Remove Franchise</h2>
+      <h2 id="deleteModalTitle">Remove Franchise</h2>
       <button class="modal-close" id="deleteModalClose" aria-label="Close">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <p class="confirm-text">Are you sure you want to remove <b id="deleteTargetName">this franchise</b>? Any tricycles linked to it will be unassigned. This cannot be undone.</p>
+    <p class="confirm-text" id="deleteModalText"><strong>Official Warning:</strong> Removing <b id="deleteTargetName">this franchise</b> will permanently delete the franchise record and all associated data, including linked drivers, tricycles, assignments, renewal records, and uploaded documents. This action is irreversible and the information cannot be recovered.</p>
     <div class="modal-footer">
       <button type="button" class="btn-secondary" id="deleteCancelBtn">Cancel</button>
       <button type="button" class="btn-danger" id="deleteConfirmBtn">Remove</button>

@@ -175,6 +175,11 @@ function deleteRecord($table, $condition, $conditionParams = [])
     }
 
     $result = mysqli_stmt_execute($stmt);
+    if (!$result) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        throw new Exception("Delete failed: " . $error);
+    }
     mysqli_stmt_close($stmt);
 
     return $result;

@@ -67,6 +67,7 @@
         id: Number(account.admin_id ?? account.id ?? 0),
         admin_id: Number(account.admin_id ?? account.id ?? 0)
       }));
+      renderCurrentAdmin(result.currentAdmin);
       updateStats();
       render();
     } catch (error) {
@@ -77,6 +78,14 @@
       emptyState.classList.remove('hidden');
       emptyState.querySelector('div').textContent = error.message;
     }
+  }
+
+  function renderCurrentAdmin(currentAdmin) {
+    const label = currentAdmin?.name || currentAdmin?.username || 'Super Admin';
+    const nameEl = document.getElementById('currentAdminName');
+    const mobileNameEl = document.getElementById('currentAdminNameMobile');
+    if (nameEl) nameEl.textContent = label;
+    if (mobileNameEl) mobileNameEl.textContent = label;
   }
 
   function initials(first, last) {
@@ -349,13 +358,17 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async (e) => {
     if (deletingId != null) {
+      const confirmButton = e.currentTarget;
+      setSubmitLoading(confirmButton, true);
       try {
         await apiRequest({ action: 'delete', id: deletingId });
         await loadAccounts();
       } catch (error) {
         alert(error.message);
+      } finally {
+        setSubmitLoading(confirmButton, false);
       }
     }
     closeDeleteModal();

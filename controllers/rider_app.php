@@ -300,7 +300,6 @@ function updateDriver($data) {
     $assignment = getRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
     $existing = getRecord('drivers', 'driver_id = ?', [$id]);
     if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Driver submission not found.'], 404);
-    if (($existing['status'] ?? 'Pending') !== 'Pending') respond(['success' => false, 'message' => 'Only pending driver submissions can be edited.'], 422);
 
     $name = trim($data['name'] ?? '');
     $contact = trim($data['contact'] ?? '');
@@ -325,8 +324,10 @@ function updateDriver($data) {
         insertSomething('driver_tricycle', ['driver_id' => $id, 'tricycle_id' => $tricycleId]);
     }
 
+    $ownerName = currentAccountName();
+    $franchiseName = $franchise['franchise_name'] ?? 'the franchise';
     $adminEmail = getAdminEmailByFranchiseId($franchise['franchise_id']) ?: getAdminEmail();
-    createNotification('Driver Submission Edited', "The pending driver submission for $name was edited by the rider.", 'Driver', 'warning', $adminEmail, $id, 'driver_submission_edited');
+    createNotification('Driver Details Updated', "$ownerName changed driver details for \"$name\" at \"$franchiseName\".", 'Driver', 'warning', $adminEmail, $id, 'driver_updated');
     respond(['success' => true]);
 }
 function assignDriver($data) {
@@ -377,7 +378,6 @@ function updateTricycle($data) {
     $assignment = getRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
     $existing = getRecord('tricycles', 'tricycle_id = ?', [$id]);
     if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Tricycle submission not found.'], 404);
-    if (($existing['status'] ?? 'Pending') !== 'Pending') respond(['success' => false, 'message' => 'Only pending tricycle submissions can be edited.'], 422);
 
     $brand = trim($data['brand'] ?? '');
     $color = trim($data['color'] ?? '');
@@ -403,8 +403,10 @@ function updateTricycle($data) {
     deleteRecord('driver_tricycle', 'tricycle_id = ?', [$id]);
     if ($driverId !== false && $driverId !== null) insertSomething('driver_tricycle', ['driver_id' => $driverId, 'tricycle_id' => $id]);
 
+    $ownerName = currentAccountName();
+    $franchiseName = $franchise['franchise_name'] ?? 'the franchise';
     $adminEmail = getAdminEmailByFranchiseId($franchise['franchise_id']) ?: getAdminEmail();
-    createNotification('Tricycle Submission Edited', "The pending tricycle submission for $brand ($plate) was edited by the rider.", 'Tricycle', 'warning', $adminEmail, $id, 'tricycle_submission_edited');
+    createNotification('Tricycle Details Updated', "$ownerName changed tricycle details for \"$brand ($plate)\" at \"$franchiseName\".", 'Tricycle', 'warning', $adminEmail, $id, 'tricycle_updated');
     respond(['success' => true]);
 }
 function cancelPendingSubmission($data) {
@@ -470,6 +472,41 @@ function updateOwnedStatus($data) {
     }
     respond(['success' => true, 'label' => $label]);
 }
+function removeOwnedRecord($data) {
+    $franchise = ownedFranchise();
+    $type = trim((string) ($data['type'] ?? ''));
+    $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$franchise || !$id || !in_array($type, ['driver', 'tricycle'], true)) respond(['success' => false, 'message' => 'Record not found.'], 404);
+
+    $ownerName = currentAccountName();
+    $franchiseName = $franchise['franchise_name'] ?? 'the franchise';
+
+    if ($type === 'driver') {
+        $assignment = getRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
+        $existing = getRecord('drivers', 'driver_id = ?', [$id]);
+        if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Driver not found in your franchise.'], 404);
+        deleteRecord('driver_tricycle', 'driver_id = ?', [$id]);
+        deleteRecord('franchise_driver', 'franchise_id = ? AND driver_id = ?', [$franchise['franchise_id'], $id]);
+        deleteRecord('drivers', 'driver_id = ?', [$id]);
+        $subject = 'driver "' . $existing['full_name'] . '"';
+        $relatedType = 'driver_removed';
+    } else {
+        $assignment = getRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
+        $existing = getRecord('tricycles', 'tricycle_id = ?', [$id]);
+        if (!$assignment || !$existing) respond(['success' => false, 'message' => 'Tricycle not found in your franchise.'], 404);
+        deleteRecord('driver_tricycle', 'tricycle_id = ?', [$id]);
+        deleteRecord('franchise_tricycle', 'franchise_id = ? AND tricycle_id = ?', [$franchise['franchise_id'], $id]);
+        deleteRecord('tricycles', 'tricycle_id = ?', [$id]);
+        $subject = 'tricycle "' . ($existing['plate_number'] ?: 'Unit ' . $id) . '"';
+        $relatedType = 'tricycle_removed';
+    }
+
+    $message = "$ownerName removed $subject from \"$franchiseName\".";
+    foreach (getSuperAdminEmails() as $email) {
+        createNotification('Record Removed', $message, ucfirst($type), 'urgent', $email, $id, $relatedType);
+    }
+    respond(['success' => true]);
+}
 try {
     $loginSource = $_SESSION['login_source'] ?? 'rider';
     $hasAdminSession = $loginSource === 'admin' && !empty($_SESSION['admin_id']);
@@ -488,6 +525,7 @@ try {
     if (($data['action'] ?? '') === 'update-tricycle') updateTricycle($data);
     if (($data['action'] ?? '') === 'cancel-submission') cancelPendingSubmission($data);
     if (($data['action'] ?? '') === 'update-status') updateOwnedStatus($data);
+    if (($data['action'] ?? '') === 'remove-record') removeOwnedRecord($data);
     if (($data['action'] ?? '') === 'update-profile') {
         $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
         if (!$id || $id !== (int) $_SESSION['rider_id']) respond(['success' => false, 'message' => 'Profile not found.'], 404);

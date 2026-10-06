@@ -113,6 +113,15 @@ function validateActiveDriver($driverId)
 	return (int) $driverId;
 }
 
+function duplicateTricycleMessage($duplicate, $payload)
+{
+	if (($duplicate['plate_number'] ?? null) === $payload['plate_number']) return 'This plate number is already registered to another tricycle.';
+	if (($duplicate['engine_number'] ?? null) === $payload['engine_number']) return 'This engine number is already registered to another tricycle.';
+	if (($duplicate['chassis_number'] ?? null) === $payload['chassis_number']) return 'This chassis number is already registered to another tricycle.';
+	if (($duplicate['sticker_number'] ?? null) === $payload['sticker_number']) return 'This body number/sticker is already registered to another tricycle.';
+	return 'This tricycle already exists in the system.';
+}
+
 function listTricycles()
 {
 	ensureTricycleStatusColumn();
@@ -175,10 +184,8 @@ try {
 		if (!$adminId) respond(['success' => false, 'message' => 'Admin session required.'], 401);
 		$payload = tricyclePayload($data);
 		$driverId = validateActiveDriver(idValue($data['driver_id'] ?? null));
-		if (!isSuperAdmin()) {
-			$duplicate = getRecord('tricycles', 'admin_id = ? AND (plate_number = ? OR engine_number = ? OR chassis_number = ? OR sticker_number = ?)', [$adminId, $payload['plate_number'], $payload['engine_number'], $payload['chassis_number'], $payload['sticker_number']]);
-			if ($duplicate) respond(['success' => false, 'message' => 'This tricycle already exists for this admin account.'], 409);
-		}
+		$duplicate = getRecord('tricycles', 'plate_number = ? OR engine_number = ? OR chassis_number = ? OR sticker_number = ?', [$payload['plate_number'], $payload['engine_number'], $payload['chassis_number'], $payload['sticker_number']]);
+		if ($duplicate) respond(['success' => false, 'message' => duplicateTricycleMessage($duplicate, $payload)], 409);
 		$payload['admin_id'] = $adminId;
 		$tricycleId = insertSomething('tricycles', $payload);
 		replaceAssignment('driver_tricycle', 'driver_id', $tricycleId, $driverId);
@@ -194,10 +201,8 @@ try {
 		if (!isSuperAdmin() && (int) $existing['admin_id'] !== currentAdminId()) respond(['success' => false, 'message' => 'You can only edit your own tricycle records.'], 403);
 		$payload = tricyclePayload($data);
 		$driverId = validateActiveDriver(idValue($data['driver_id'] ?? null));
-		if (!isSuperAdmin()) {
-			$duplicate = getRecord('tricycles', 'admin_id = ? AND tricycle_id != ? AND (plate_number = ? OR engine_number = ? OR chassis_number = ? OR sticker_number = ?)', [$adminId = currentAdminId(), $id, $payload['plate_number'], $payload['engine_number'], $payload['chassis_number'], $payload['sticker_number']]);
-			if ($duplicate) respond(['success' => false, 'message' => 'This tricycle already exists for this admin account.'], 409);
-		}
+		$duplicate = getRecord('tricycles', 'tricycle_id != ? AND (plate_number = ? OR engine_number = ? OR chassis_number = ? OR sticker_number = ?)', [$id, $payload['plate_number'], $payload['engine_number'], $payload['chassis_number'], $payload['sticker_number']]);
+		if ($duplicate) respond(['success' => false, 'message' => duplicateTricycleMessage($duplicate, $payload)], 409);
 		$existingDriverAssignment = getRecord('driver_tricycle', 'tricycle_id = ?', [$id]);
 		$existingFranchiseAssignment = getRecord('franchise_tricycle', 'tricycle_id = ?', [$id]);
 		updateRecord('tricycles', $payload, 'tricycle_id = ?', [$id]);
@@ -251,11 +256,17 @@ try {
 		$existing = getRecord('tricycles', 'tricycle_id = ?', [$id]);
 		if (!$existing) respond(['success' => false, 'message' => 'Tricycle not found.'], 404);
 		if (!isSuperAdmin() && (int) $existing['admin_id'] !== currentAdminId()) respond(['success' => false, 'message' => 'You can only delete your own tricycle records.'], 403);
+		$riderEmail = getRiderEmailByTricycleId($id);
+		$adminEmail = getAdminEmailByTricycleId($id) ?: getAdminEmail();
 		deleteRecord('tricycles', 'tricycle_id = ?', [$id]);
+		triggerTricycleRemovalNotification($id, $existing['plate_number'] ?? "Unit $id", $riderEmail, $adminEmail);
 		respond(['success' => true]);
 	}
 
 	respond(['success' => false, 'message' => 'Invalid request.'], 400);
 } catch (Throwable $error) {
+	if (stripos($error->getMessage(), 'Duplicate entry') !== false) {
+		respond(['success' => false, 'message' => 'The plate, engine, chassis, or body number you entered is already in use by another tricycle.'], 409);
+	}
 	respond(['success' => false, 'message' => 'Unable to process tricycle request.'], 500);
 }

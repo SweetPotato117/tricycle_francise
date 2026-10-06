@@ -14,6 +14,13 @@ function requestData() { $data = json_decode(file_get_contents('php://input'), t
 function requireAdminSession() {
 	if (empty($_SESSION['admin_id'])) respond(['success' => false, 'message' => 'Admin login required.'], 401);
 }
+function runNotificationSafely($callback) {
+	try {
+		$callback();
+	} catch (Throwable $error) {
+		error_log('Pending request notification error: ' . $error->getMessage());
+	}
+}
 function ensureFranchiseDocumentsTable() {
 	global $conn;
 	if (!mysqli_query($conn, 'CREATE TABLE IF NOT EXISTS franchise_documents (document_id INT NOT NULL AUTO_INCREMENT, franchise_id INT NOT NULL, receipt_photo VARCHAR(255) DEFAULT NULL, PRIMARY KEY (document_id), UNIQUE KEY franchise_id (franchise_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4')) {
@@ -97,22 +104,30 @@ function resolveRequest($data, $approve) {
 			$franchiseId = insertSomething('franchises', ['franchise_name' => $application['franchise_name'], 'owner_name' => $application['rider_name'], 'owner_email' => $application['rider_email'], 'address' => $application['address'], 'issue_date' => $application['issue_date'], 'expiry_date' => $application['expiry_date'], 'renewal_status' => 'Active']);
 			if (!empty($application['receipt_photo'])) insertSomething('franchise_documents', ['franchise_id' => $franchiseId, 'receipt_photo' => $application['receipt_photo']]);
 			updateRecord('franchise_applications', ['status' => 'Approved', 'franchise_id' => $franchiseId, 'admin_comments' => $comments], 'application_id = ?', [$id]);
-			notifyFranchiseApproval($application['rider_email'], $application['franchise_name']);
+			runNotificationSafely(function () use ($application) {
+				notifyFranchiseApproval($application['rider_email'], $application['franchise_name']);
+			});
 		} else {
 			updateRecord('franchise_applications', ['status' => 'Rejected', 'admin_comments' => $comments], 'application_id = ?', [$id]);
-			notifyFranchiseRejection($application['rider_email'], $application['franchise_name'], $comments ?: 'Please contact us for more details.');
+				runNotificationSafely(function () use ($application, $comments) {
+					notifyFranchiseRejection($application['rider_email'], $application['franchise_name'], $comments ?: 'Please contact us for more details.');
+				});
 		}
 	} elseif ($type === 'driver') {
 		$driver = getRecord('drivers', 'driver_id = ? AND status IN (?, ?)', [$id, 'Pending', 'For Review']);
 		if (!$driver) respond(['success' => false, 'message' => 'Pending driver request not found.'], 404);
 		if (!$approve) respond(['success' => false, 'message' => 'Driver rejection is not supported by the current driver status schema.'], 422);
 		updateRecord('drivers', ['status' => 'Approved'], 'driver_id = ?', [$id]);
-		triggerDriverStatusNotification($id, $driver['full_name'], $driver['email'] ?? null, $driver['status'], 'Approved');
+		runNotificationSafely(function () use ($id, $driver) {
+			triggerDriverStatusNotification($id, $driver['full_name'], $driver['email'] ?? null, $driver['status'], 'Approved');
+		});
 	} elseif ($type === 'tricycle') {
 		$tricycle = getRecord('tricycles', 'tricycle_id = ? AND status = ?', [$id, 'Pending']);
 		if (!$tricycle) respond(['success' => false, 'message' => 'Pending tricycle request not found.'], 404);
 		updateRecord('tricycles', ['status' => $approve ? 'Active' : 'Inactive'], 'tricycle_id = ?', [$id]);
-		triggerTricycleStatusNotification($id, $tricycle['plate_number'] ?: "Unit $id", 'Pending', $approve ? 'Active' : 'Inactive');
+		runNotificationSafely(function () use ($id, $tricycle, $approve) {
+			triggerTricycleStatusNotification($id, $tricycle['plate_number'] ?: "Unit $id", 'Pending', $approve ? 'Active' : 'Inactive');
+		});
 	} elseif ($type === 'renewal') {
 		$renewal = getRecord('renewals', 'renewal_id = ? AND receipt_status = ?', [$id, 'Submitted']);
 		if (!$renewal) respond(['success' => false, 'message' => 'Pending renewal request not found.'], 404);
@@ -128,17 +143,19 @@ function resolveRequest($data, $approve) {
 		}
 		if ($franchise) {
 			$reason = trim($data['reason'] ?? 'Please contact the admin team for assistance.');
-			createNotification(
-				$approve ? 'Renewal Approved' : 'Renewal Requires Attention',
-				$approve
-					? "Your renewal for {$franchise['franchise_name']} has been approved. Your franchise is active through {$renewal['due_date']}."
-					: "Your renewal for {$franchise['franchise_name']} was not approved. {$reason}",
-				'Renewal',
-				$approve ? 'info' : 'urgent',
-				$franchise['owner_email'] ?? '',
-				$id,
-				'renewal_decision'
-			);
+			runNotificationSafely(function () use ($approve, $franchise, $renewal, $reason, $id) {
+				createNotification(
+					$approve ? 'Renewal Approved' : 'Renewal Requires Attention',
+					$approve
+						? "Your renewal for {$franchise['franchise_name']} has been approved. Your franchise is active through {$renewal['due_date']}."
+						: "Your renewal for {$franchise['franchise_name']} was not approved. {$reason}",
+					'Renewal',
+					$approve ? 'info' : 'urgent',
+					$franchise['owner_email'] ?? '',
+					$id,
+					'renewal_decision'
+				);
+			});
 		}
 	} else respond(['success' => false, 'message' => 'Unknown request type.'], 422);
 	respond(['success' => true]);

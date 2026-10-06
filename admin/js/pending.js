@@ -12,10 +12,27 @@
       button.dataset.originalContent = button.innerHTML;
       button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Processing...</span>';
       button.disabled = true;
+      button.classList.add('is-loading');
+      button.setAttribute('aria-busy', 'true');
     } else {
       button.innerHTML = button.dataset.originalContent || button.innerHTML;
       button.disabled = false;
+      button.classList.remove('is-loading');
+      button.removeAttribute('aria-busy');
     }
+  }
+
+  function showActionMessage(message, isError = false) {
+    const note = document.querySelector('.fs-toolbar-note');
+    if (!note) return;
+    note.textContent = message;
+    note.classList.toggle('error', isError);
+  }
+
+  function setRequestProcessing(button, processing) {
+    setActionLoading(button, processing);
+    const card = button.closest('.request-card');
+    if (card) card.classList.toggle('is-processing', processing);
   }
 
   function mockDocImage(label, tint) {
@@ -222,7 +239,7 @@
 
     tableBody.querySelectorAll('.view-all').forEach(btn => btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openFsModal(Number(btn.dataset.id));
+      openFsModal(btn.dataset.id);
     }));
   }
 
@@ -248,6 +265,7 @@
   const fsModalBody = document.getElementById('fsModalBody');
   const approveAllBtn = document.getElementById('approveAllBtn');
   let currentGroupId = null;
+  let approvingAll = false;
 
   function openFsModal(groupId) {
     currentGroupId = groupId;
@@ -263,9 +281,10 @@
   }
 
   document.getElementById('fsModalClose').addEventListener('click', closeFsModal);
+  document.getElementById('fsFooterClose').addEventListener('click', closeFsModal);
 
   function renderFsModal() {
-    const g = franchiseGroups.find(x => x.id === currentGroupId);
+    const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
     if (!g) return;
 
     document.getElementById('fsFranchiseName').textContent = g.franchiseName;
@@ -274,6 +293,20 @@
     const pending = pendingRequests(g);
     document.getElementById('fsToolbarCount').innerHTML = `${pending.length} pending <span>· ${g.requests.length} total requests</span>`;
     approveAllBtn.disabled = pending.length === 0;
+    const franchiseRequest = pending.find(request => request.actionType === 'franchise');
+    const approveAllLabel = document.getElementById('approveAllLabel');
+    if (franchiseRequest) {
+      approveAllLabel.textContent = 'Accept Franchise';
+      approveAllBtn.title = 'Accept this franchise application';
+      approveAllBtn.classList.add('accept-franchise-btn');
+    } else {
+      approveAllLabel.textContent = 'Approve All Pending';
+      approveAllBtn.title = 'Approve all pending requests';
+      approveAllBtn.classList.remove('accept-franchise-btn');
+    }
+    showActionMessage(franchiseRequest
+      ? 'Review the submitted details and accept this franchise application when ready.'
+      : 'Review the submitted details and documents before making a decision.');
 
     const sorted = [...g.requests].sort((a, b) => {
       if (a.status !== b.status) {
@@ -283,8 +316,8 @@
       return new Date(b.submittedAt) - new Date(a.submittedAt);
     });
 
-    fsModalBody.innerHTML = sorted.map(r => `
-      <div class="request-card ${r.status !== 'Pending' ? 'resolved' : ''}" data-req-id="${r.id}">
+    fsModalBody.innerHTML = sorted.length ? sorted.map(r => `
+      <div class="request-card ${r.status !== 'Pending' ? 'resolved' : ''} ${r.actionType === 'franchise' ? 'franchise-request' : ''}" data-req-id="${r.id}">
         <div class="request-top">
           <div class="request-title-group">
             <div class="request-title">${r.title}</div>
@@ -295,6 +328,7 @@
           </div>
           <span class="status-pill ${statusPillClass(r.status)}">${r.status}</span>
         </div>
+        ${r.actionType === 'franchise' ? `<div class="review-summary"><span class="review-summary-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span><strong>Franchise application</strong><small>Confirm the applicant details and payment receipt before accepting.</small></span></div>` : ''}
         <div class="request-desc">${r.description}</div>
         <div class="doc-strip">
           ${r.docs.map(d => d.value
@@ -330,7 +364,7 @@
           </div>
         ` : ''}
       </div>
-    `).join('');
+    `).join('') : `<div class="modal-empty"><div class="modal-empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><strong>All requests are resolved</strong><span>There are no pending requests for this franchise.</span></div>`;
 
     fsModalBody.querySelectorAll('.req-doc-thumb').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.src)));
 
@@ -363,46 +397,81 @@
   }
 
   async function approveRequest(reqId, button) {
-    const g = franchiseGroups.find(x => x.id === currentGroupId);
+    const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
     if (!g) return;
     const r = g.requests.find(x => x.id === reqId);
     if (!r) return;
-    setActionLoading(button, true);
+    setRequestProcessing(button, true);
     try {
       await pendingRequest({ action: 'approve', type: r.actionType, id: r.id });
-      r.status = 'Approved'; r.denialReason = ''; renderFsModal(); updateStats(); render();
+      r.status = 'Approved'; r.denialReason = '';
+      renderFsModal();
+      const card = fsModalBody.querySelector(`[data-req-id="${reqId}"]`);
+      if (card) card.classList.add('approval-complete');
+      await new Promise(resolve => setTimeout(resolve, 650));
+      updateStats(); render();
     } catch (error) { alert(error.message); }
-    finally { setActionLoading(button, false); }
+    finally { setRequestProcessing(button, false); }
   }
 
   async function denyRequest(reqId, reason, button) {
-    const g = franchiseGroups.find(x => x.id === currentGroupId);
+    const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
     if (!g) return;
     const r = g.requests.find(x => x.id === reqId);
     if (!r) return;
-    setActionLoading(button, true);
+    setRequestProcessing(button, true);
     try {
       await pendingRequest({ action: 'deny', type: r.actionType, id: r.id, reason });
       r.status = 'Denied'; r.denialReason = reason; renderFsModal(); updateStats(); render();
     } catch (error) { alert(error.message); }
-    finally { setActionLoading(button, false); }
+    finally { setRequestProcessing(button, false); }
   }
 
   approveAllBtn.addEventListener('click', async () => {
-    const g = franchiseGroups.find(x => x.id === currentGroupId);
-    if (!g) return;
+    if (approvingAll) return;
+    const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
+    if (!g) {
+      showActionMessage('This request is no longer available. Please close and reopen it.', true);
+      return;
+    }
+    const pending = g.requests.filter(request => request.status === 'Pending');
+    const franchiseRequest = pending.find(request => request.actionType === 'franchise');
+    const requestsToApprove = franchiseRequest ? [franchiseRequest] : pending;
+    if (!requestsToApprove.length) {
+      showActionMessage('There are no pending requests to accept.', true);
+      return;
+    }
+    approvingAll = true;
     setActionLoading(approveAllBtn, true);
+    showActionMessage(franchiseRequest ? 'Accepting franchise application...' : 'Approving pending requests...');
+    let approvalFailed = false;
     try {
-    for (const request of g.requests.filter(request => request.status === 'Pending')) {
+    for (const request of requestsToApprove) {
+      const card = fsModalBody.querySelector(`[data-req-id="${request.id}"]`);
+      if (card) card.classList.add('is-processing');
       try {
         await pendingRequest({ action: 'approve', type: request.actionType, id: request.id });
         request.status = 'Approved'; request.denialReason = '';
-      } catch (error) { alert(error.message); break; }
+        if (card) {
+          card.classList.remove('is-processing');
+          card.classList.add('approval-complete');
+        }
+      } catch (error) {
+        approvalFailed = true;
+        showActionMessage(error.message, true);
+        break;
+      }
     }
     renderFsModal();
+    fsModalBody.querySelectorAll('.request-card.resolved').forEach(card => card.classList.add('approval-complete'));
+    await new Promise(resolve => setTimeout(resolve, 650));
     updateStats();
     render();
+    if (!approvalFailed) {
+      showActionMessage(franchiseRequest ? 'Franchise accepted successfully.' : 'Pending requests approved successfully.');
+    }
     } finally {
+      approvingAll = false;
       setActionLoading(approveAllBtn, false);
     }
   });

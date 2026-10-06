@@ -3,7 +3,6 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 $modelsPath = __DIR__ . '/../models';
-set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
 require_once $modelsPath . '/functions.php';
 require_once $modelsPath . '/notifications.php';
 require_once $modelsPath . '/notification_triggers.php';
@@ -147,6 +146,7 @@ function listFranchiseApplications()
 		return [
 			'id' => (int) $application['application_id'], 'riderName' => $application['rider_name'],
 			'riderEmail' => $application['rider_email'], 'franchiseName' => $application['franchise_name'],
+			'franchiseId' => $application['franchise_id'] ? (int) $application['franchise_id'] : null,
 			'address' => $application['address'] ?? '', 'issueDate' => $application['issue_date'] ?? '',
 			'expiryDate' => $application['expiry_date'] ?? '', 'status' => $application['status'],
 			'comments' => $application['admin_comments'] ?? '', 'applicationDate' => $application['application_date'],
@@ -186,8 +186,48 @@ try {
 	}
 	if ($action === 'delete' && $id) {
 		ensureFranchiseDocumentsTable();
-		if (!getRecord('franchises', 'franchise_id = ?', [$id])) respond(['success' => false, 'message' => 'Franchise not found.'], 404);
-		deleteRecord('franchises', 'franchise_id = ?', [$id]);
+		ensureFranchiseApplicationsTable();
+		$existing = getRecord('franchises', 'franchise_id = ?', [$id]);
+		if (!$existing) respond(['success' => false, 'message' => 'Franchise not found.'], 404);
+		$driverAssignments = getAllRecords('franchise_driver', 'WHERE franchise_id = ?', [$id]);
+		$tricycleAssignments = getAllRecords('franchise_tricycle', 'WHERE franchise_id = ?', [$id]);
+		if (!mysqli_begin_transaction($conn)) throw new Exception(mysqli_error($conn));
+		try {
+			$driverIds = array_values(array_unique(array_map(fn($assignment) => (int) $assignment['driver_id'], $driverAssignments)));
+			$tricycleIds = array_values(array_unique(array_map(fn($assignment) => (int) $assignment['tricycle_id'], $tricycleAssignments)));
+			foreach ($driverIds as $driverId) {
+				if (!deleteRecord('driver_tricycle', 'driver_id = ?', [$driverId])) throw new Exception(mysqli_error($conn));
+			}
+			foreach ($tricycleIds as $tricycleId) {
+				if (!deleteRecord('driver_tricycle', 'tricycle_id = ?', [$tricycleId])) throw new Exception(mysqli_error($conn));
+			}
+			$deletes = [
+				['renewals', 'franchise_id = ?', [$id]],
+				['franchise_documents', 'franchise_id = ?', [$id]],
+				['franchise_driver', 'franchise_id = ?', [$id]],
+				['franchise_tricycle', 'franchise_id = ?', [$id]],
+				['drivers', 'driver_id IN (' . ($driverIds ? implode(',', array_fill(0, count($driverIds), '?')) : 'NULL') . ')', $driverIds],
+				['tricycles', 'tricycle_id IN (' . ($tricycleIds ? implode(',', array_fill(0, count($tricycleIds), '?')) : 'NULL') . ')', $tricycleIds]
+			];
+			foreach ($deletes as [$table, $condition, $params]) {
+				if (!deleteRecord($table, $condition, $params)) throw new Exception(mysqli_error($conn));
+			}
+			if (!deleteRecord('franchise_applications', 'franchise_id = ?', [$id])) throw new Exception(mysqli_error($conn));
+			if (!deleteRecord('franchises', 'franchise_id = ?', [$id])) throw new Exception('The franchise record could not be deleted from the franchises table.');
+			if (getRecord('franchises', 'franchise_id = ?', [$id])) throw new Exception('Franchise still exists after delete.');
+			if (!mysqli_commit($conn)) throw new Exception(mysqli_error($conn));
+		} catch (Throwable $error) {
+			mysqli_rollback($conn);
+			throw $error;
+		}
+		$adminEmail = trim($_SESSION['admin_email'] ?? '') ?: getAdminEmail();
+		triggerFranchiseRemovalNotification($id, $existing['franchise_name'], $existing['owner_email'] ?? null, $adminEmail);
+		respond(['success' => true]);
+	}
+	if ($action === 'delete-application' && $id) {
+		ensureFranchiseApplicationsTable();
+		if (!getRecord('franchise_applications', 'application_id = ?', [$id])) respond(['success' => false, 'message' => 'Application not found.'], 404);
+		if (!deleteRecord('franchise_applications', 'application_id = ?', [$id])) throw new Exception(mysqli_error($conn));
 		respond(['success' => true]);
 	}
 	if (in_array($action, ['approve-application', 'reject-application'], true) && $id) {
@@ -237,5 +277,7 @@ try {
 	}
 	respond(['success' => false, 'message' => 'Invalid request.'], 400);
 } catch (Throwable $error) {
-	respond(['success' => false, 'message' => 'Unable to process franchise request.'], 500);
+	error_log('Franchise management error: ' . $error->getMessage());
+	error_log('Franchise management error: ' . $error->getMessage());
+	respond(['success' => false, 'message' => $error->getMessage()], 500);
 }

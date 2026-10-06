@@ -85,7 +85,18 @@ function listAccounts()
 			'lastLogin' => $row['last_login'] ? str_replace(' ', 'T', $row['last_login']) : ''
 		];
 	}
-	respond(['success' => true, 'accounts' => $accounts]);
+	respond(['success' => true, 'accounts' => $accounts, 'currentAdmin' => currentAdminInfo()]);
+}
+
+function currentAdminInfo()
+{
+	return [
+		'id' => (int) ($_SESSION['admin_id'] ?? 0),
+		'name' => trim((string) ($_SESSION['admin_name'] ?? '')),
+		'username' => trim((string) ($_SESSION['admin_username'] ?? '')),
+		'email' => trim((string) ($_SESSION['admin_email'] ?? '')),
+		'role' => trim((string) ($_SESSION['admin_role'] ?? ''))
+	];
 }
 
 try {

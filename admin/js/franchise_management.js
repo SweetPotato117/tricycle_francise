@@ -389,13 +389,19 @@
 
   /* ---------- delete modal ---------- */
   const deleteModalOverlay = document.getElementById('deleteModalOverlay');
+  const deleteModalTitle = document.getElementById('deleteModalTitle');
+  const deleteModalText = document.getElementById('deleteModalText');
   let deletingId = null;
+  let deletingKind = 'franchise';
+  let deletingApplication = null;
 
   function openDeleteModal(id) {
     const f = franchises.find(x => x.id === id);
     if (!f) return;
     deletingId = id;
-    document.getElementById('deleteTargetName').textContent = f.name;
+    deletingKind = 'franchise';
+    deleteModalTitle.textContent = 'Remove Franchise';
+    deleteModalText.innerHTML = `<strong>Official Warning:</strong> Removing <b id="deleteTargetName">${f.name}</b> will permanently delete the franchise record and all associated data, including linked drivers, tricycles, assignments, renewal records, and uploaded documents. This action is irreversible and the information cannot be recovered.`;
     deleteModalOverlay.classList.add('open');
   }
 
@@ -405,13 +411,29 @@
   document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
   deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) closeDeleteModal(); });
 
-  document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+  document.getElementById('deleteConfirmBtn').addEventListener('click', async (e) => {
     if (deletingId != null) {
+      const confirmButton = e.currentTarget;
+      setSubmitLoading(confirmButton, true);
       try {
-        await apiRequest({ action: 'delete', id: deletingId });
-        await loadFranchises();
+        if (deletingKind === 'application') {
+          if (deletingApplication && deletingApplication.status === 'Approved' && deletingApplication.franchiseId) {
+            await apiRequest({ action: 'delete', id: deletingApplication.franchiseId });
+          } else {
+            const response = await fetch(franchiseApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete-application', id: deletingId }) });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Unable to remove application.');
+          }
+          if (typeof window.__reloadFranchiseApplications === 'function') await window.__reloadFranchiseApplications();
+          await loadFranchises();
+        } else {
+          await apiRequest({ action: 'delete', id: deletingId });
+          await loadFranchises();
+        }
       } catch (error) {
         alert(error.message);
+      } finally {
+        setSubmitLoading(confirmButton, false);
       }
     }
     closeDeleteModal();
@@ -449,6 +471,7 @@
           <td class="application-actions">
             <button class="icon-btn application-view" data-id="${application.id}" title="View application"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             ${application.status === 'Pending' ? `<button class="icon-btn approve application-approve" data-id="${application.id}" title="Approve application"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></button><button class="icon-btn reject application-reject" data-id="${application.id}" title="Reject application"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : ''}
+            <button class="icon-btn danger application-delete" data-id="${application.id}" title="Remove application"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
           </td>
         </tr>`).join('');
       applicationEmptyState.classList.toggle('hidden', applications.length !== 0);
@@ -456,6 +479,7 @@
       applicationTableBody.querySelectorAll('.application-view').forEach(button => button.addEventListener('click', () => openApplicationModal(Number(button.dataset.id))));
       applicationTableBody.querySelectorAll('.application-approve').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'approve-application', button)));
       applicationTableBody.querySelectorAll('.application-reject').forEach(button => button.addEventListener('click', () => updateApplication(Number(button.dataset.id), 'reject-application', button)));
+      applicationTableBody.querySelectorAll('.application-delete').forEach(button => button.addEventListener('click', () => openApplicationDeleteModal(Number(button.dataset.id))));
     }
 
     function openApplicationModal(id) {
@@ -491,5 +515,21 @@
     document.getElementById('applicationModalClose').addEventListener('click', closeApplicationModal);
     document.getElementById('applicationCloseBtn').addEventListener('click', closeApplicationModal);
     applicationModalOverlay.addEventListener('click', event => { if (event.target === applicationModalOverlay) closeApplicationModal(); });
+
+    function openApplicationDeleteModal(id) {
+      const application = applications.find(item => item.id === id);
+      if (!application) return;
+      deletingId = id;
+      deletingApplication = application;
+      deletingKind = 'application';
+      deleteModalTitle.textContent = 'Remove Application';
+      const approvedFranchiseWarning = application.status === 'Approved' && application.franchiseId
+        ? ' This will also permanently delete the approved franchise record and all linked driver, tricycle, renewal, assignment, and document data.'
+        : '';
+      deleteModalText.innerHTML = `<strong>Official Warning:</strong> Removing the application for <b>${application.franchiseName}</b> submitted by <b>${application.riderName}</b> will permanently delete the application record and all associated application data.${approvedFranchiseWarning} This action is irreversible and the information cannot be recovered.`;
+      deleteModalOverlay.classList.add('open');
+    }
+
+    window.__reloadFranchiseApplications = loadApplications;
     loadApplications().catch(error => { applicationEmptyState.classList.remove('hidden'); applicationEmptyState.querySelector('div').textContent = error.message; });
   })();

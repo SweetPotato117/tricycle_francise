@@ -217,13 +217,20 @@
       </button>
     </div>
     <div class="fs-toolbar">
-      <div class="fs-toolbar-count" id="fsToolbarCount">0 pending <span>· 0 total requests</span></div>
-      <button class="approve-all-btn" id="approveAllBtn">
+      <div>
+        <div class="fs-toolbar-count" id="fsToolbarCount">0 pending <span>· 0 total requests</span></div>
+        <div class="fs-toolbar-note">Review the submitted details and documents before making a decision.</div>
+      </div>
+      <button class="approve-all-btn" id="approveAllBtn" type="button">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        Approve All Pending
+        <span id="approveAllLabel">Approve All Pending</span>
       </button>
     </div>
     <div class="fs-modal-body" id="fsModalBody">
+    </div>
+    <div class="fs-modal-footer">
+      <span class="fs-footer-hint">Decisions are saved immediately.</span>
+      <button class="fs-footer-close" id="fsFooterClose" type="button">Done</button>
     </div>
   </div>
 </div>

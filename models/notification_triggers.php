@@ -142,6 +142,63 @@ function triggerTricycleAssignmentNotification($tricycle_id, $driver_id, $driver
 }
 
 /**
+ * Notify a rider and Super Admins that a driver record was removed by an admin.
+ */
+function triggerDriverRemovalNotification($driver_id, $driver_name, $rider_email = null, $admin_email = null)
+{
+	if (!$admin_email && $driver_id) {
+		$admin_email = getAdminEmailByDriverId($driver_id);
+	}
+	$admin_email = $admin_email ?: getAdminEmail();
+	$message = "Driver \"$driver_name\" has been removed from the system by the admin.";
+
+	if ($rider_email && filter_var($rider_email, FILTER_VALIDATE_EMAIL)) {
+		createNotification('Driver Removed', $message, 'Driver', 'urgent', $rider_email, null, 'driver_removed');
+	}
+	foreach (getSuperAdminEmails() as $email) {
+		if (strcasecmp($email, (string) $rider_email) === 0) continue;
+		createNotification("$driver_name - Driver Removed", $message, 'Driver', 'urgent', $email, null, 'driver_removed');
+	}
+}
+
+/**
+ * Notify a rider and Super Admins that a tricycle record was removed by an admin.
+ */
+function triggerTricycleRemovalNotification($tricycle_id, $tricycle_plate, $rider_email = null, $admin_email = null)
+{
+	if (!$admin_email && $tricycle_id) {
+		$admin_email = getAdminEmailByTricycleId($tricycle_id);
+	}
+	$admin_email = $admin_email ?: getAdminEmail();
+	$message = "Tricycle $tricycle_plate has been removed from the system by the admin.";
+
+	if ($rider_email && filter_var($rider_email, FILTER_VALIDATE_EMAIL)) {
+		createNotification('Tricycle Removed', $message, 'Tricycle', 'urgent', $rider_email, null, 'tricycle_removed');
+	}
+	foreach (getSuperAdminEmails() as $email) {
+		if (strcasecmp($email, (string) $rider_email) === 0) continue;
+		createNotification("$tricycle_plate - Tricycle Removed", $message, 'Tricycle', 'urgent', $email, null, 'tricycle_removed');
+	}
+}
+
+/**
+ * Notify a franchise owner and Super Admins that a franchise was removed by an admin.
+ */
+function triggerFranchiseRemovalNotification($franchise_id, $franchise_name, $owner_email = null, $admin_email = null)
+{
+	$admin_email = $admin_email ?: getAdminEmail();
+	$message = "Franchise \"$franchise_name\" has been removed from the system by the admin. Any tricycles linked to it have been unassigned.";
+
+	if ($owner_email && filter_var($owner_email, FILTER_VALIDATE_EMAIL)) {
+		createNotification('Franchise Removed', $message, 'Franchise', 'urgent', $owner_email, null, 'franchise_removed');
+	}
+	foreach (getSuperAdminEmails() as $email) {
+		if (strcasecmp($email, (string) $owner_email) === 0) continue;
+		createNotification("$franchise_name - Franchise Removed", $message, 'Franchise', 'urgent', $email, null, 'franchise_removed');
+	}
+}
+
+/**
  * Check and trigger renewal notifications for all franchises
  * Now scoped to send only to the admin who owns each franchise
  */

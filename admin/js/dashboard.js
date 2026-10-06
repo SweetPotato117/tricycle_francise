@@ -1,8 +1,8 @@
-  fetch('../controllers/notification.php', { credentials: 'same-origin' }).then(response => response.json()).then(result => {
+  fetch('../controllers/notification.php', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.json()).then(result => {
     const count = (result.notifications || []).filter(notification => !notification.isRead).length;
     document.querySelectorAll('.notification-count').forEach(badge => { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; });
   }).catch(() => {});
-  fetch('../controllers/pending.php', { credentials: 'same-origin' }).then(response => response.json()).then(result => {
+  fetch('../controllers/pending.php', { credentials: 'same-origin', cache: 'no-store' }).then(response => response.json()).then(result => {
     const count = (result.groups || []).flatMap(group => group.requests || []).filter(request => request.status === 'Pending').length;
     const badge = document.getElementById('navBadge');
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
@@ -16,6 +16,7 @@
   const closeReportModalBtn = document.getElementById('closeReportModalBtn');
   const reportType = document.getElementById('reportType');
   const reportValue = document.getElementById('reportValue');
+  const reportPassword = document.getElementById('reportPassword');
 
   function openDrawer() {
     sidebar.classList.add('open');
@@ -33,6 +34,7 @@
 
   function closeReportModal() {
     reportModal.classList.remove('open');
+    reportPassword.value = '';
   }
 
   function updateReportInput() {
@@ -64,17 +66,34 @@
   });
 
   document.getElementById('generateReportBtn').addEventListener('click', () => {
+    if (!reportPassword.reportValidity()) return;
+
     const type = reportType.value;
     const value = reportValue.value;
-    const url = `../controllers/report_export.php?type=${encodeURIComponent(type)}&value=${encodeURIComponent(value)}`;
-    window.open(url, '_blank');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '../controllers/report_export.php';
+    form.target = '_blank';
+    form.hidden = true;
+
+    [['type', type], ['value', value], ['sheet_password', reportPassword.value]].forEach(([name, fieldValue]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = fieldValue;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
     closeReportModal();
   });
 
   const dashboardApi = '../controllers/dashboard.php';
 
   async function loadDashboard() {
-    const response = await fetch(dashboardApi);
+    const response = await fetch(`${dashboardApi}?_=${Date.now()}`, { credentials: 'same-origin', cache: 'no-store' });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load dashboard.');
 
@@ -100,6 +119,11 @@
       </div>
     `).join('') : '<div class="dashboard-list-sub">No pending applications</div>';
     document.getElementById('pendingApplicationCount').textContent = stats.pendingApplications;
+    const pendingBadge = document.getElementById('navBadge');
+    if (pendingBadge) {
+      pendingBadge.textContent = stats.pendingApplications;
+      pendingBadge.style.display = stats.pendingApplications ? 'flex' : 'none';
+    }
 
     const franchiseStatuses = [
       ['Active', result.renewalOverview.active, 'var(--green)'],
@@ -129,3 +153,6 @@
   setInterval(() => {
     if (!document.hidden) loadDashboard().catch(() => {});
   }, 15000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loadDashboard().catch(() => {});
+  });

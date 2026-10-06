@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 03, 2026 at 09:01 AM
+-- Generation Time: Sep 22, 2026 at 07:45 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,10 +46,11 @@ CREATE TABLE `admins` (
 --
 
 INSERT INTO `admins` (`admin_id`, `first_name`, `last_name`, `username`, `email`, `password`, `role`, `status`, `last_login`, `created_at`, `address`) VALUES
-(1, 'System', 'Administrator', 'admin', 'admin@tricyclefranchise.com', '$2y$10$WcGsCs.IE8uVilcX8Fvwu.2aeDtR4BWg8Ne8WWhVL4fCyuQhS0Zxm', 'Super Admin', 'Active', '2026-08-30 11:44:04', '2026-08-24 11:20:43', NULL),
-(4, 'john', 'doe', 'john', 'blasmiggy@gmail.com', '$2y$10$.yztrVGv9H1Aw6Cej72NZO862Cmkx8oqlBo80xJAOIE5rTONmnTOC', 'Admin', 'Active', NULL, '2026-08-29 21:05:01', 'Alicia, Isablea'),
-(5, 'reina', 'mercedes', 'Mayora', 'reinamercedes2026@gmail.com', '$2y$10$EOZb2YeAIP5sKo8jcicO4e2FB/Q9ExwXA6btoZ.5xVcBMKUselTz.', 'Super Admin', 'Active', '2026-09-03 14:49:33', '2026-08-30 07:39:13', 'Reina Mercedes'),
-(6, 'Manong', 'Berting', 'Berto', 'labsmiggy@gmail.com', '$2y$10$EAOEBgoW3NRbcY/JnHisA.o36QVDvAyPEhTXjFfpKUdDTp/aLzXFO', 'Admin', 'Active', NULL, '2026-08-30 07:41:14', 'Alicia, Isablea');
+(1, 'System', 'Administrator', 'admin', 'admin@tricyclefranchise.com', '$2y$10$WcGsCs.IE8uVilcX8Fvwu.2aeDtR4BWg8Ne8WWhVL4fCyuQhS0Zxm', 'Super Admin', 'Active', '2026-09-20 15:27:27', '2026-08-24 11:20:43', NULL),
+(4, 'john', 'doe', 'john', 'blasmiggy@gmail.com', '$2y$10$.yztrVGv9H1Aw6Cej72NZO862Cmkx8oqlBo80xJAOIE5rTONmnTOC', 'Admin', 'Active', '2026-09-20 15:31:45', '2026-08-29 21:05:01', 'Alicia, Isablea'),
+(5, 'reina', 'mercedes', 'Mayora', 'reinamercedes2026@gmail.com', '$2y$10$EOZb2YeAIP5sKo8jcicO4e2FB/Q9ExwXA6btoZ.5xVcBMKUselTz.', 'Super Admin', 'Active', '2026-09-22 13:40:31', '2026-08-30 07:39:13', 'Reina Mercedes'),
+(6, 'Manong', 'Berting', 'Berto', 'labsmiggy@gmail.com', '$2y$10$EAOEBgoW3NRbcY/JnHisA.o36QVDvAyPEhTXjFfpKUdDTp/aLzXFO', 'Admin', 'Active', NULL, '2026-08-30 07:41:14', 'Alicia, Isablea'),
+(7, 'gelo', 'bot', 'gelobot', 'gelobot9000@gmail.com', '$2y$10$DeKtSBJVpkhIbDmGN5a2seCO843o7j05WwtLI7.LYQsHP8QYe4KkW', 'Admin', 'Active', '2026-09-20 17:52:51', '2026-09-20 09:52:26', 'Daramuangan Sur, Barangan Street');
 
 -- --------------------------------------------------------
 
@@ -69,7 +70,7 @@ CREATE TABLE `drivers` (
   `driver_license_number` varchar(100) DEFAULT NULL,
   `or_cr_number` varchar(100) DEFAULT NULL,
   `president_certificate` varchar(255) DEFAULT NULL,
-  `status` enum('Pending','For Review','Approved') DEFAULT 'Pending',
+  `status` enum('Pending','For Review','Approved','Inactive') DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `email` varchar(255) DEFAULT NULL,
@@ -82,11 +83,7 @@ CREATE TABLE `drivers` (
 
 INSERT INTO `drivers` (`driver_id`, `full_name`, `contact_number`, `age`, `gender`, `address`, `driver_license`, `or_cr`, `driver_license_number`, `or_cr_number`, `president_certificate`, `status`, `created_at`, `updated_at`, `email`, `admin_id`) VALUES
 (1, 'John Doe', '0987654321', 34, 'Male', 'address', 'uploads/driver_license_36a9e550c3c17e40bd20.jpg', 'uploads/or_cr_6cef98f5f4a7fffdf627.gif', NULL, NULL, 'uploads/president_certificate_f6bc232ef44f357700b8.jpg', 'Approved', '2026-08-25 16:04:14', '2026-08-25 16:04:14', NULL, NULL),
-(2, 'Marial Rizal', '09876543152', 23, NULL, 'Address street 09', 'uploads/driver_license_483bdf6d3231b4775131.jpg', 'uploads/or_cr_6bbce60a8cede24aa630.gif', NULL, NULL, 'uploads/president_certificate_f342bfa3cf5ffe65e372.jpg', 'Approved', '2026-08-30 03:43:32', '2026-08-30 03:44:29', NULL, NULL),
-(3, 'rene rizal', '0987654321', 24, NULL, 'address street 89', 'uploads/driver_license_f6b4e88c343b2f6e9a39.jpg', 'uploads/or_cr_5b43bde70feeae37e6c2.gif', NULL, NULL, 'uploads/president_certificate_47fd5130ce3cc6dec73d.jpg', 'Approved', '2026-08-30 05:12:15', '2026-08-30 07:30:00', NULL, NULL),
-(4, 'Ariana Grande', '098765432', 27, NULL, 'Address street, city, 90', 'uploads/driver_license_234a35c6f0cc24f2deb1.jpg', 'uploads/or_cr_091add83ff9603850a02.jpg', NULL, NULL, 'uploads/president_certificate_4506ef8135808580c5da.jpg', 'Approved', '2026-08-30 07:34:45', '2026-09-01 05:59:44', NULL, NULL),
-(5, 'Elsa', '09876321', 22, NULL, 'Reina Mercede Ice castle', 'uploads/driver_license_e6ab06d527fb993a5dfa.jpg', 'uploads/or_cr_4527513eccc8fc680b52.jpg', NULL, NULL, 'uploads/president_certificate_98a76c589341934e349f.jpg', 'Approved', '2026-08-30 08:13:19', '2026-08-30 08:14:22', NULL, NULL),
-(6, 'Anna', '0987654322', 35, NULL, 'address street reina', 'uploads/driver_license_2f31e67e561e3aa1812b.gif', 'uploads/or_cr_5625aa38d7bf4a2fa5c4.jpg', NULL, NULL, 'uploads/president_certificate_136c9332658a056a85ba.gif', 'Approved', '2026-08-30 09:26:04', '2026-08-30 09:26:34', NULL, NULL);
+(2, 'Marial Rizal', '09876543152', 23, NULL, 'Address street 09', 'uploads/driver_license_483bdf6d3231b4775131.jpg', 'uploads/or_cr_6bbce60a8cede24aa630.gif', NULL, NULL, 'uploads/president_certificate_f342bfa3cf5ffe65e372.jpg', 'Approved', '2026-08-30 03:43:32', '2026-08-30 03:44:29', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -107,8 +104,7 @@ CREATE TABLE `driver_tricycle` (
 
 INSERT INTO `driver_tricycle` (`assignment_id`, `driver_id`, `tricycle_id`, `assigned_date`) VALUES
 (9, 2, 7, '2026-08-30'),
-(10, 6, 9, '2026-08-30'),
-(11, 2, 13, '2026-09-01');
+(12, 1, 16, '2026-09-20');
 
 -- --------------------------------------------------------
 
@@ -135,11 +131,12 @@ CREATE TABLE `franchises` (
 
 INSERT INTO `franchises` (`franchise_id`, `franchise_name`, `owner_name`, `address`, `issue_date`, `expiry_date`, `renewal_status`, `created_at`, `updated_at`, `owner_email`) VALUES
 (3, 'Somewhere Franchise', 'Cardo Dalisay', 'Address', '2026-08-28', '2027-05-26', 'Active', '2026-08-25 16:05:50', '2026-08-25 16:05:50', NULL),
-(5, 'san mateo', 'Ricardo Dalisaysay', 'Address address', '2025-08-29', '2026-08-30', 'Active', '2026-08-29 02:10:26', '2026-08-29 02:10:26', NULL),
-(6, 'cauayan', 'Ricardo Dalisaysaysay', 'Address de address', '2025-08-29', '2026-08-30', 'Active', '2026-08-29 02:17:55', '2026-08-29 02:17:55', NULL),
-(7, 'santiago', 'Ricardo Dalisaysaysaysay', 'Address de address adress', '2025-08-29', '2026-08-30', 'Active', '2026-08-29 02:26:40', '2026-08-29 02:26:40', NULL),
+(5, 'san mateo', 'Ricardo Dalisaysay', 'Address address', '2025-08-29', '2026-08-30', 'Expired', '2026-08-29 02:10:26', '2026-09-20 05:49:27', NULL),
+(6, 'cauayan', 'Ricardo Dalisaysaysay', 'Address de address', '2025-08-29', '2026-08-30', 'Expired', '2026-08-29 02:17:55', '2026-09-20 05:49:27', NULL),
+(7, 'santiago', 'Ricardo Dalisaysaysaysay', 'Address de address adress', '2025-08-29', '2026-08-30', 'Expired', '2026-08-29 02:26:40', '2026-09-20 05:49:27', NULL),
 (11, 'Ipad franchise', 'John Doe', 'San pablo, Isabela', '2026-08-29', '2027-08-29', 'Active', '2026-08-29 05:09:50', '2026-08-29 05:09:50', 'blasmiggy@gmail.com'),
-(12, 'Berting\'s franchise', 'Manong Berting', 'Reina Mercedes somewhere', '2029-01-01', '2030-01-01', 'Active', '2026-08-30 07:55:33', '2026-08-30 09:02:50', 'labsmiggy@gmail.com');
+(12, 'Berting\'s franchise', 'Manong Berting', 'Reina Mercedes somewhere', '2029-01-01', '2030-01-01', 'Active', '2026-08-30 07:55:33', '2026-08-30 09:02:50', 'labsmiggy@gmail.com'),
+(13, 'gelobot9000', 'gelo bot', 'darsur', '2027-01-01', '2028-01-01', 'Active', '2026-09-20 10:11:43', '2026-09-20 10:11:43', 'gelobot9000@gmail.com');
 
 -- --------------------------------------------------------
 
@@ -169,8 +166,8 @@ CREATE TABLE `franchise_applications` (
 --
 
 INSERT INTO `franchise_applications` (`application_id`, `rider_id`, `rider_name`, `rider_email`, `franchise_id`, `franchise_name`, `application_date`, `status`, `admin_comments`, `updated_at`, `address`, `issue_date`, `expiry_date`, `receipt_photo`) VALUES
-(1, 3, 'John Doe', 'blasmiggy@gmail.com', 11, 'Ipad franchise', '2026-08-29 05:08:51', 'Approved', '', '2026-08-29 05:09:50', 'San pablo, Isabela', '2026-08-29', '2027-08-29', 'uploads/franchise_application_receipt_183fa9bf495c503bca00.gif'),
-(2, 6, 'Manong Berting', 'labsmiggy@gmail.com', 12, 'Berting\'s franchise', '2026-08-30 07:53:38', 'Approved', '', '2026-08-30 07:55:33', 'Reina Mercedes somewhere', '2027-01-01', '2028-01-01', 'uploads/franchise_application_receipt_55227a00293303dfad63.jpg');
+(2, 6, 'Manong Berting', 'labsmiggy@gmail.com', 12, 'Berting\'s franchise', '2026-08-30 07:53:38', 'Approved', '', '2026-08-30 07:55:33', 'Reina Mercedes somewhere', '2027-01-01', '2028-01-01', 'uploads/franchise_application_receipt_55227a00293303dfad63.jpg'),
+(3, 7, 'gelo bot', 'gelobot9000@gmail.com', 13, 'gelobot9000', '2026-09-20 09:54:31', 'Approved', '', '2026-09-20 10:11:43', 'darsur', '2027-01-01', '2028-01-01', 'uploads/franchise_application_receipt_1bab59512b9d640b7319.jpg');
 
 -- --------------------------------------------------------
 
@@ -198,7 +195,8 @@ INSERT INTO `franchise_documents` (`document_id`, `franchise_id`, `receipt_photo
 (7, 9, 'uploads/franchise_receipt_4e958d594fbd458203d4.gif'),
 (8, 10, 'uploads/franchise_receipt_4238c6e47a16e1fe76c9.gif'),
 (9, 11, 'uploads/franchise_application_receipt_183fa9bf495c503bca00.gif'),
-(10, 12, 'uploads/franchise_application_receipt_55227a00293303dfad63.jpg');
+(10, 12, 'uploads/franchise_application_receipt_55227a00293303dfad63.jpg'),
+(11, 13, 'uploads/franchise_application_receipt_1bab59512b9d640b7319.jpg');
 
 -- --------------------------------------------------------
 
@@ -217,11 +215,7 @@ CREATE TABLE `franchise_driver` (
 --
 
 INSERT INTO `franchise_driver` (`assignment_id`, `franchise_id`, `driver_id`) VALUES
-(1, 11, 2),
-(2, 11, 3),
-(3, 11, 4),
-(4, 12, 5),
-(5, 12, 6);
+(1, 11, 2);
 
 -- --------------------------------------------------------
 
@@ -243,10 +237,7 @@ CREATE TABLE `franchise_tricycle` (
 INSERT INTO `franchise_tricycle` (`assignment_id`, `franchise_id`, `tricycle_id`, `assigned_date`) VALUES
 (2, 11, 3, '2026-08-30'),
 (5, 11, 7, '2026-08-30'),
-(6, 11, 8, '2026-08-30'),
-(7, 12, 9, '2026-08-30'),
-(8, 11, 12, '2026-09-01'),
-(9, 11, 13, '2026-09-01');
+(12, 13, 16, '2026-09-20');
 
 -- --------------------------------------------------------
 
@@ -361,7 +352,41 @@ INSERT INTO `notifications` (`notification_id`, `title`, `message`, `type`, `sev
 (87, 'Tricycle Status: Active', 'Tricycle 7654345 status changed from Pending to Active.', 'Tricycle', 'info', 'blasmiggy@gmail.com', 13, 'tricycle_status_change', 0, '2026-09-01 06:26:55'),
 (88, '7654345 - Tricycle Status: Active', 'Tricycle 7654345 status changed from Pending to Active.', 'Tricycle', 'info', 'reinamercedes2026@gmail.com', 13, 'tricycle_status_change', 0, '2026-09-01 06:27:00'),
 (89, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 3, 2026 at 2:25 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-03 06:25:59'),
-(90, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 3, 2026 at 2:49 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-03 06:49:33');
+(90, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 3, 2026 at 2:49 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-03 06:49:33'),
+(91, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 1:49 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 05:49:19'),
+(95, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 2:55 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 06:55:13'),
+(96, 'Tricycle Details Updated', 'Manong Berting changed tricycle details for \"yamaha (mk45)\" at \"Berting\'s franchise\".', 'Tricycle', 'warning', 'labsmiggy@gmail.com', 9, 'tricycle_updated', 0, '2026-09-20 06:56:03'),
+(100, 'Tricycle Removed', 'Tricycle 7654345 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'blasmiggy@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:17:20'),
+(101, '7654345 - Tricycle Removed', 'Tricycle 7654345 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'admin@tricyclefranchise.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:17:24'),
+(102, 'Super Admin Login Detected', 'System Administrator signed in to the Tricycle Franchise System on September 20, 2026 at 3:21 PM.', 'Admin', 'info', 'admin@tricyclefranchise.com', 1, 'super_admin_login', 0, '2026-09-20 07:21:14'),
+(106, 'Tricycle Removed', 'Tricycle 1234567 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'blasmiggy@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:23:24'),
+(107, '1234567 - Tricycle Removed', 'Tricycle 1234567 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'admin@tricyclefranchise.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:23:28'),
+(108, '1234567 - Tricycle Removed', 'Tricycle 1234567 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'reinamercedes2026@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:23:32'),
+(109, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 3:23 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 07:23:57'),
+(110, 'Tricycle Removed', 'Tricycle mk45 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'labsmiggy@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:24:11'),
+(111, 'mk45 - Tricycle Removed', 'Tricycle mk45 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'admin@tricyclefranchise.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:24:14'),
+(112, 'mk45 - Tricycle Removed', 'Tricycle mk45 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'reinamercedes2026@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 07:24:18'),
+(113, 'Super Admin Login Detected', 'System Administrator signed in to the Tricycle Franchise System on September 20, 2026 at 3:27 PM.', 'Admin', 'info', 'admin@tricyclefranchise.com', 1, 'super_admin_login', 0, '2026-09-20 07:27:27'),
+(114, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 3:29 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 07:29:04'),
+(115, 'Tricycle Removed', 'Tricycle DFR312 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'blasmiggy@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 09:32:20'),
+(116, 'DFR312 - Tricycle Removed', 'Tricycle DFR312 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'admin@tricyclefranchise.com', NULL, 'tricycle_removed', 0, '2026-09-20 09:32:28'),
+(117, 'DFR312 - Tricycle Removed', 'Tricycle DFR312 has been removed from the system by the admin.', 'Tricycle', 'urgent', 'reinamercedes2026@gmail.com', NULL, 'tricycle_removed', 0, '2026-09-20 09:32:35'),
+(118, 'New Franchise Application', 'gelo bot submitted a franchise application for \'gelobot9000\'.', 'Franchise', 'warning', 'admin@tricyclefranchise.com', 3, 'franchise_submission', 0, '2026-09-20 09:54:31'),
+(119, 'New Franchise Application', 'gelo bot submitted a franchise application for \'gelobot9000\'.', 'Franchise', 'warning', 'reinamercedes2026@gmail.com', 3, 'franchise_submission', 0, '2026-09-20 09:54:36'),
+(120, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:31'),
+(121, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:37'),
+(122, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:41'),
+(123, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:45'),
+(124, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:49'),
+(125, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:52'),
+(126, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:57 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:57:56'),
+(127, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 5:58 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 09:58:00'),
+(128, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 6:02 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 10:02:58'),
+(129, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 20, 2026 at 6:07 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-20 10:07:18'),
+(130, 'Franchise Application Approved!', 'Your application for gelobot9000 franchise has been approved. ', 'Franchise', 'info', 'gelobot9000@gmail.com', NULL, 'franchise_approval', 0, '2026-09-20 10:11:43'),
+(131, 'Tricycle Status: Active', 'Tricycle 424242 status changed from Pending to Active.', 'Tricycle', 'info', 'gelobot9000@gmail.com', 16, 'tricycle_status_change', 0, '2026-09-20 10:44:17'),
+(132, '424242 - Tricycle Status: Active', 'Tricycle 424242 status changed from Pending to Active.', 'Tricycle', 'info', 'reinamercedes2026@gmail.com', 16, 'tricycle_status_change', 0, '2026-09-20 10:44:25'),
+(133, 'Super Admin Login Detected', 'reina mercedes signed in to the Tricycle Franchise System on September 22, 2026 at 1:40 PM.', 'Admin', 'info', 'reinamercedes2026@gmail.com', 5, 'super_admin_login', 0, '2026-09-22 05:40:31');
 
 -- --------------------------------------------------------
 
@@ -417,7 +442,7 @@ CREATE TABLE `riders` (
 --
 
 INSERT INTO `riders` (`rider_id`, `full_name`, `email`, `password`, `contact_number`, `address`, `driver_license`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'Test Rider', 'testrider@example.com', '$2y$10$fxjFuwpotAXfz8My/7dZ8uQCf14BMtbwwuy1oS.kE.s6Z/0yZraj2', NULL, NULL, NULL, 'Active', '2026-08-30 03:33:07', '2026-08-30 03:33:07');
+(1, 'Test Rider', 'testrider@example.com', NULL, NULL, NULL, NULL, 'Active', '2026-08-30 03:33:07', '2026-09-20 05:59:22');
 
 -- --------------------------------------------------------
 
@@ -448,10 +473,7 @@ CREATE TABLE `tricycles` (
 INSERT INTO `tricycles` (`tricycle_id`, `brand`, `engine_number`, `chassis_number`, `color`, `plate_number`, `sticker_number`, `status`, `created_at`, `updated_at`, `admin_id`, `or_document`, `cr_document`) VALUES
 (3, 'Not specified', '1242412413241', '1412414141', NULL, 'lmk123', NULL, 'Inactive', '2026-08-29 19:56:01', '2026-08-29 20:22:28', NULL, NULL, NULL),
 (7, 'TMX', '1234', '1234', 'red', '1234', '12312', 'Active', '2026-08-30 04:38:37', '2026-08-30 06:44:03', NULL, 'uploads/tricycle_or_c902e3838cfd8140029c.gif', NULL),
-(8, 'TMX 125', '5435353', '3242344', 'red', 'DFR312', '2', 'Active', '2026-08-30 07:36:01', '2026-09-01 05:11:42', NULL, 'uploads/tricycle_or_dae4308753550d41877f.gif', NULL),
-(9, 'yamaha', '132123123', '31235445', 'red', 'mk45', '9', 'Active', '2026-08-30 08:09:24', '2026-08-30 08:11:05', NULL, 'uploads/tricycle_or_6e97473082af2d97d515.gif', NULL),
-(12, 'TMX 123', '12349', '1323131', 'red', '1234567', '7', 'Active', '2026-09-01 06:11:41', '2026-09-01 06:12:10', NULL, 'uploads/tricycle_or_539731fdca22bcd5af65.jpg', NULL),
-(13, 'honda 213', '534674', '5365', 'red', '7654345', '5', 'Active', '2026-09-01 06:26:24', '2026-09-01 06:26:55', NULL, 'uploads/tricycle_or_07eb9061c3fc51cff638.gif', NULL);
+(16, 'trm', '5252424', '423424', 'red', '424242', '23', 'Active', '2026-09-20 10:44:07', '2026-09-20 10:44:17', 5, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -561,55 +583,55 @@ ALTER TABLE `tricycles`
 -- AUTO_INCREMENT for table `admins`
 --
 ALTER TABLE `admins`
-  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `drivers`
 --
 ALTER TABLE `drivers`
-  MODIFY `driver_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `driver_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `driver_tricycle`
 --
 ALTER TABLE `driver_tricycle`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `franchises`
 --
 ALTER TABLE `franchises`
-  MODIFY `franchise_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `franchise_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `franchise_applications`
 --
 ALTER TABLE `franchise_applications`
-  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `application_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `franchise_documents`
 --
 ALTER TABLE `franchise_documents`
-  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `document_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `franchise_driver`
 --
 ALTER TABLE `franchise_driver`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `franchise_tricycle`
 --
 ALTER TABLE `franchise_tricycle`
-  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `assignment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
 
 --
 -- AUTO_INCREMENT for table `renewals`
@@ -621,13 +643,13 @@ ALTER TABLE `renewals`
 -- AUTO_INCREMENT for table `riders`
 --
 ALTER TABLE `riders`
-  MODIFY `rider_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `rider_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tricycles`
 --
 ALTER TABLE `tricycles`
-  MODIFY `tricycle_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `tricycle_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- Constraints for dumped tables
