@@ -4,12 +4,31 @@ if (file_exists($configFile)) {
     require_once $configFile;
 }
 
-$conn = mysqli_init();
-mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+try {
+    $password = getenv('DB_PASSWORD');
+    if ($password === false || $password === '') {
+        throw new RuntimeException('Missing DB_PASSWORD');
+    }
 
-if (!mysqli_real_connect($conn, 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com', '2BsfQMyrVHEEVBQ.root', 'VfTEs9RYt4aOwBTW', 'tricycle_franchise_system', 4000, NULL, MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT)) {
-    die('Connection Error: ' . mysqli_connect_error());
+    $caFile = getenv('DB_SSL_CA') ?: __DIR__ . '/isrg-root-x1.pem';
+    if (!is_readable($caFile)) {
+        throw new RuntimeException('Missing database CA bundle');
+    }
+
+    $conn = mysqli_init();
+    mysqli_ssl_set($conn, null, null, $caFile, null, null);
+    mysqli_options($conn, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+    mysqli_real_connect($conn, 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com',
+        getenv('DB_USER') ?: '2BsfQMyrVHEEVBQ.root', $password,
+        getenv('DB_NAME') ?: 'tricycle_franchise_system', 4000, null, MYSQLI_CLIENT_SSL);
+    mysqli_set_charset($conn, 'utf8');
+} catch (Throwable $error) {
+    $reason = $error instanceof mysqli_sql_exception ? 'MySQL error ' . $error->getCode()
+        : ($error instanceof RuntimeException ? $error->getMessage() : get_class($error));
+    error_log('Database setup failed: ' . $reason);
+    http_response_code(503);
+    exit('Database unavailable.');
 }
-
-mysqli_set_charset($conn, "utf8");
+unset($password);
 date_default_timezone_set('Asia/Manila');
