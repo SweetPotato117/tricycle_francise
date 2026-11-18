@@ -10,7 +10,7 @@ $host = 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com'; //
 $port = 4000; //[cite: 4]
 $username = '2BsfQMyrVHEEVBQ.root'; //[cite: 4]
 $password = 'VfTEs9RYt4aOwBTW'; //[cite: 4]
-$database = 'tricycle_franchise_system';
+$database = 'sys';
 
 // Path to your downloaded TiDB CA certificate (place the .pem file in your project folder)
 $caCertPath = __DIR__ . '/isrgrootx1.pem'; 
