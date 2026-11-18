@@ -27,7 +27,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
+      min-height: 100%;
       font-family: 'Poppins', sans-serif;
     }
 
@@ -36,20 +36,21 @@
       align-items: center;
       justify-content: flex-end;
       min-height: 100vh;
+      min-height: 100svh;
       padding: 40px;
-      background-image: url('assets/bgimage.png');
-      background-size: cover;
-      background-position: center;
-      background-color: #b7bcc4;
+      background: #b7bcc4 url('assets/bgimage.png') center center / cover no-repeat;
     }
 
     .login-card {
       width: 100%;
       max-width: 720px;
-      background: var(--card-bg);
+      background: rgba(247, 248, 250, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.52);
       border-radius: 18px;
-      box-shadow: 0 25px 60px rgba(20, 28, 46, 0.25);
+      box-shadow: 0 25px 60px rgba(20, 28, 46, 0.3);
       padding: 56px 64px 40px;
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
     }
 
     .login-card h1 {
@@ -120,6 +121,32 @@
       font-weight: 400;
     }
 
+    .password-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 4px 0 4px 8px;
+      border: none;
+      background: transparent;
+      color: var(--blue);
+      cursor: pointer;
+    }
+
+    .password-toggle svg {
+      display: block;
+      width: 20px;
+      height: 20px;
+    }
+
+    .password-toggle svg[hidden] { display: none; }
+
+    .password-toggle:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
     .forgot-row {
       text-align: right;
       margin-bottom: 22px;
@@ -154,6 +181,18 @@
       background: var(--blue-dark);
     }
 
+    .sign-in-btn:disabled { opacity: .82; cursor: wait; }
+    .sign-in-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      margin: 0 9px -4px 0;
+      border: 2px solid rgba(255,255,255,.5);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: login-spin .8s linear infinite;
+    }
+
     .divider {
       border: none;
       border-top: 1px solid var(--border-gray);
@@ -166,6 +205,45 @@
       font-size: 14px;
     }
 
+    .login-progress {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(16, 26, 61, 0.62);
+      padding: 24px;
+    }
+
+    .login-progress[hidden] { display: none; }
+
+    .login-progress-card {
+      width: 100%;
+      max-width: 360px;
+      padding: 32px 24px;
+      border-radius: 18px;
+      background: #fff;
+      color: var(--navy);
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+    }
+
+    .login-progress-spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 18px;
+      border: 4px solid #dce4f5;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: login-spin .8s linear infinite;
+    }
+
+    .login-progress-message { margin: 0; font-size: 17px; font-weight: 700; }
+    .login-progress-detail { margin: 8px 0 0; color: var(--text-gray); font-size: 13px; }
+    @keyframes login-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .login-progress-spinner { animation-duration: 2s; } }
+
     @media (max-width: 600px) {
       body { justify-content: center; padding: 20px; }
       .login-card { padding: 36px 28px 28px; }
@@ -174,6 +252,13 @@
   </style>
 </head>
 <body>
+  <div class="login-progress" id="login-progress" role="status" aria-live="polite" hidden>
+    <div class="login-progress-card">
+      <div class="login-progress-spinner" aria-hidden="true"></div>
+      <p class="login-progress-message">Login successful. Welcome back!</p>
+      <p class="login-progress-detail">Opening your dashboard…</p>
+    </div>
+  </div>
   <div class="login-card">
     <h1>Welcome Back!</h1>
     <p class="subtitle">Please sign in to your admin account.</p>
@@ -198,12 +283,21 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
           <input type="password" id="password" name="password" placeholder="Enter your password" required>
+          <button type="button" class="password-toggle" id="password-toggle" aria-label="Show password" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+              <path d="M3 10c2.2 3.5 5.2 5.5 9 5.5s6.8-2 9-5.5"></path>
+              <path d="m6 11-1 2"></path>
+              <path d="m12 15.5v2"></path>
+              <path d="m18 11 1 2"></path>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <div class="forgot-row">
-        <a href="#">Forgot Password?</a>
-      </div>
 
       <button type="submit" class="sign-in-btn">Sign In</button>
 
@@ -216,8 +310,33 @@
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const form = document.querySelector('form');
+    const loginProgress = document.getElementById('login-progress');
+    const password = document.getElementById('password');
+    const passwordToggle = document.getElementById('password-toggle');
+    const passwordIcons = passwordToggle.querySelectorAll('svg');
 
-    if (error && form) {
+    passwordToggle.addEventListener('click', () => {
+      const isVisible = password.type === 'text';
+      password.type = isVisible ? 'password' : 'text';
+      passwordToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+      passwordToggle.setAttribute('aria-pressed', String(!isVisible));
+      passwordIcons[0].hidden = !isVisible;
+      passwordIcons[1].hidden = isVisible;
+    });
+
+    if (params.get('login') === 'success') {
+      loginProgress.hidden = false;
+      window.setTimeout(() => window.location.replace('admin/dashboard.html'), 3000);
+    } else if (form) {
+      form.addEventListener('submit', () => {
+        const button = form.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.innerHTML = '<span class="sign-in-spinner" aria-hidden="true"></span>Signing in…';
+      });
+    }
+
+    if (error && form && params.get('login') !== 'success') {
       const alertBox = document.createElement('div');
       alertBox.className = 'alert';
       alertBox.textContent = error === 'missing'

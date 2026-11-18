@@ -48,7 +48,9 @@
   let ownerAccounts = [];
 
   async function apiRequest(payload = null) {
-    const options = payload ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) } : {};
+    const options = payload
+      ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+      : { cache: 'no-store' };
     const response = await fetch(franchiseApi, options);
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || 'Request failed.');
@@ -58,14 +60,26 @@
   async function loadFranchises() {
     try {
       const result = await apiRequest();
+      const hasNewFranchise = franchises.length > 0
+        && result.franchises.some(franchise => !franchises.some(existing => existing.id === franchise.id));
       franchises = result.franchises;
+      if (hasNewFranchise) {
+        searchTerm = '';
+        searchInput.value = '';
+        activeFilter = 'All';
+        filterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+          tab.classList.toggle('active', tab.dataset.filter === 'All');
+        });
+      }
       ownerAccounts = result.owners || [];
       populateOwnerAccounts();
       updateStats();
       render();
+      return true;
     } catch (error) {
       emptyState.classList.remove('hidden');
       emptyState.querySelector('div').textContent = error.message;
+      return false;
     }
   }
 
@@ -120,7 +134,11 @@
     const term = searchTerm.trim().toLowerCase();
     const filtered = franchises.filter(f => {
       const matchesFilter = activeFilter === 'All' || f.status === activeFilter;
-      const matchesSearch = !term || f.name.toLowerCase().includes(term) || f.owner.toLowerCase().includes(term);
+      const searchableValues = [
+        f.name, f.owner, f.ownerEmail, f.address, f.status, f.id, String(f.id).padStart(4, '0'), f.issue, f.expiry,
+        ...(Array.isArray(f.tricycles) ? f.tricycles : [])
+      ];
+      const matchesSearch = !term || searchableValues.some(value => String(value ?? '').toLowerCase().includes(term));
       return matchesFilter && matchesSearch;
     });
 
@@ -206,7 +224,14 @@
     });
   });
 
-  searchInput.addEventListener('input', (e) => { searchTerm = e.target.value; render(); });
+  searchInput.addEventListener('input', (e) => {
+    searchTerm = e.target.value;
+    activeFilter = 'All';
+    filterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.filter === 'All');
+    });
+    render();
+  });
 
   /* ---------- add / edit modal ---------- */
   const franchiseModalOverlay = document.getElementById('franchiseModalOverlay');
@@ -274,6 +299,13 @@
 
   function openAddModal() {
     editingId = null;
+    searchTerm = '';
+    searchInput.value = '';
+    activeFilter = 'All';
+    filterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.filter === 'All');
+    });
+    render();
     franchiseModalTitle.textContent = 'Add Franchise';
     franchiseForm.reset();
     formReceipt = { dataUrl: '', name: '', uploadedBy: '' };
@@ -325,8 +357,10 @@
 
     try {
       await apiRequest({ ...payload, action: editingId ? 'update' : 'create', ...(editingId ? { id: editingId } : {}) });
-      await loadFranchises();
       closeFranchiseModal();
+      if (!await loadFranchises()) {
+        alert('The franchise was saved, but the list could not be refreshed. Reload the page to see the new record.');
+      }
     } catch (error) {
       alert(error.message);
     } finally {
@@ -392,14 +426,11 @@
   const deleteModalTitle = document.getElementById('deleteModalTitle');
   const deleteModalText = document.getElementById('deleteModalText');
   let deletingId = null;
-  let deletingKind = 'franchise';
-  let deletingApplication = null;
 
   function openDeleteModal(id) {
     const f = franchises.find(x => x.id === id);
     if (!f) return;
     deletingId = id;
-    deletingKind = 'franchise';
     deleteModalTitle.textContent = 'Remove Franchise';
     deleteModalText.innerHTML = `<strong>Official Warning:</strong> Removing <b id="deleteTargetName">${f.name}</b> will permanently delete the franchise record and all associated data, including linked drivers, tricycles, assignments, renewal records, and uploaded documents. This action is irreversible and the information cannot be recovered.`;
     deleteModalOverlay.classList.add('open');
@@ -416,20 +447,8 @@
       const confirmButton = e.currentTarget;
       setSubmitLoading(confirmButton, true);
       try {
-        if (deletingKind === 'application') {
-          if (deletingApplication && deletingApplication.status === 'Approved' && deletingApplication.franchiseId) {
-            await apiRequest({ action: 'delete', id: deletingApplication.franchiseId });
-          } else {
-            const response = await fetch(franchiseApi, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete-application', id: deletingId }) });
-            const result = await response.json();
-            if (!response.ok || !result.success) throw new Error(result.message || 'Unable to remove application.');
-          }
-          if (typeof window.__reloadFranchiseApplications === 'function') await window.__reloadFranchiseApplications();
-          await loadFranchises();
-        } else {
-          await apiRequest({ action: 'delete', id: deletingId });
-          await loadFranchises();
-        }
+        await apiRequest({ action: 'delete', id: deletingId });
+        await loadFranchises();
       } catch (error) {
         alert(error.message);
       } finally {
@@ -441,9 +460,28 @@
 
   /* ---------- init ---------- */
   loadFranchises();
+  function refreshOperatorList() {
+    if (franchiseModalOverlay.classList.contains('open')) return;
+    searchTerm = '';
+    searchInput.value = '';
+    activeFilter = 'All';
+    filterTabs.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.filter === 'All');
+    });
+    loadFranchises();
+  }
+  window.addEventListener('focus', refreshOperatorList);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshOperatorList();
+  });
+  window.setInterval(() => {
+    if (!document.hidden && !franchiseModalOverlay.classList.contains('open')) loadFranchises();
+  }, 30000);
 
   (() => {
     const applicationTableBody = document.getElementById('applicationTableBody');
+    if (!applicationTableBody) return;
+
     const applicationEmptyState = document.getElementById('applicationEmptyState');
     const applicationResultCount = document.getElementById('applicationResultCount');
     const applicationModalOverlay = document.getElementById('applicationModalOverlay');
@@ -533,3 +571,13 @@
     window.__reloadFranchiseApplications = loadApplications;
     loadApplications().catch(error => { applicationEmptyState.classList.remove('hidden'); applicationEmptyState.querySelector('div').textContent = error.message; });
   })();
+
+// Keep the displayed deadline synchronized with the issue-date anniversary.
+function updateFranchiseAnniversary() {
+  const issue = document.getElementById('fIssueDate').value;
+  if (!issue) return;
+  const [year, month, day] = issue.split('-').map(Number);
+  const lastDay = new Date(year + 1, month, 0).getDate();
+  document.getElementById('fExpiryDate').value = [year + 1, String(month).padStart(2, '0'), String(Math.min(day, lastDay)).padStart(2, '0')].join('-');
+}
+document.getElementById('fIssueDate')?.addEventListener('change', updateFranchiseAnniversary);

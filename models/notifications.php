@@ -80,6 +80,12 @@ function getRiderEmailByDriverId($driver_id)
 function getRiderEmailByTricycleId($tricycle_id)
 {
     if (!$tricycle_id) return null;
+    $tricycle = getRecord('tricycles', 'tricycle_id = ?', [(int) $tricycle_id]);
+    if (!empty($tricycle['rider_id'])) {
+        $rider = getRecord('riders', 'rider_id = ?', [(int) $tricycle['rider_id']]);
+        $email = trim($rider['email'] ?? '');
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) return $email;
+    }
     $assignment = getRecord('franchise_tricycle', 'tricycle_id = ? ORDER BY assignment_id DESC LIMIT 1', [(int) $tricycle_id]);
     if (!$assignment) return null;
     $franchise = getRecord('franchises', 'franchise_id = ?', [(int) $assignment['franchise_id']]);
@@ -192,10 +198,11 @@ function sendNotificationEmail($recipient, $title, $message, $type)
  * @param string $recipient_email - Email to send notification to (optional)
  * @param int $related_id - ID of related entity (franchise_id, driver_id, etc.)
  * @param string $related_type - Type of related entity
+ * @param bool $sendEmail - Whether to send email after saving the notification
  * 
  * @return int - Notification ID or 0 on failure
  */
-function createNotification($title, $message, $type = 'Franchise', $severity = 'info', $recipient_email = null, $related_id = null, $related_type = null)
+function createNotification($title, $message, $type = 'Franchise', $severity = 'info', $recipient_email = null, $related_id = null, $related_type = null, $sendEmail = true)
 {
     global $conn;
 
@@ -228,7 +235,7 @@ function createNotification($title, $message, $type = 'Franchise', $severity = '
     mysqli_stmt_close($stmt);
 
     // Send email if recipient provided
-    if ($recipient_email && filter_var($recipient_email, FILTER_VALIDATE_EMAIL)) {
+    if ($sendEmail && $recipient_email && filter_var($recipient_email, FILTER_VALIDATE_EMAIL)) {
         // Use the same structured template for rider and admin notifications.
         sendNotificationEmail($recipient_email, $title, $message, $type);
     }

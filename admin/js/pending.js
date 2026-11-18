@@ -100,6 +100,8 @@
   let activeFilter = 'All';
   let searchTerm = '';
   const pendingApi = '../controllers/pending.php';
+  const requestedGroupId = new URLSearchParams(window.location.search).get('group');
+  const requestedRequestKey = new URLSearchParams(window.location.search).get('request');
 
   async function pendingRequest(payload = null) {
     const response = await fetch(pendingApi, payload ? {
@@ -119,11 +121,24 @@
         ...group,
         requests: group.requests.map(request => ({
           ...request,
+          key: `${request.actionType}-${request.id}`,
           docs: (request.docs || []).map(document => ({ label: document.label, img: document.url, value: document.value }))
         }))
       }));
       updateStats();
       render();
+      if (requestedGroupId && requestedRequestKey) {
+        const requestedGroup = franchiseGroups.find(group => String(group.id) === requestedGroupId);
+        const requestedRequest = requestedGroup?.requests.find(request => request.key === requestedRequestKey && request.status === 'Pending');
+        if (requestedGroup && requestedRequest) {
+          openFsModal(requestedGroup.id);
+          requestAnimationFrame(() => {
+            const requestCard = [...fsModalBody.querySelectorAll('.request-card')]
+              .find(card => card.dataset.reqId === requestedRequestKey);
+            requestCard?.scrollIntoView({ block: 'nearest' });
+          });
+        }
+      }
     } catch (error) {
       emptyState.classList.remove('hidden');
       emptyState.querySelector('div').textContent = error.message;
@@ -317,7 +332,7 @@
     });
 
     fsModalBody.innerHTML = sorted.length ? sorted.map(r => `
-      <div class="request-card ${r.status !== 'Pending' ? 'resolved' : ''} ${r.actionType === 'franchise' ? 'franchise-request' : ''}" data-req-id="${r.id}">
+      <div class="request-card ${r.status !== 'Pending' ? 'resolved' : ''} ${r.actionType === 'franchise' ? 'franchise-request' : ''}" data-req-id="${r.key}">
         <div class="request-top">
           <div class="request-title-group">
             <div class="request-title">${r.title}</div>
@@ -338,22 +353,22 @@
         </div>
         ${r.status === 'Pending' ? `
           <div class="request-actions">
-            <button class="btn-approve-req req-approve-btn" data-req-id="${r.id}">
+            <button class="btn-approve-req req-approve-btn" data-req-id="${r.key}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
               Approve
             </button>
-            ${['franchise', 'tricycle'].includes(r.actionType) ? `<button class="btn-deny-req req-deny-toggle-btn" data-req-id="${r.id}">
+            ${['franchise', 'tricycle', 'owner_tricycle'].includes(r.actionType) ? `<button class="btn-deny-req req-deny-toggle-btn" data-req-id="${r.key}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               Deny
             </button>` : ''}
           </div>
-          <div class="deny-box" id="denyBox-${r.id}">
+          <div class="deny-box" id="denyBox-${r.key}">
             <label>Reason for Denial</label>
-            <textarea id="denyText-${r.id}" placeholder="e.g. Uploaded document is unclear, please resubmit."></textarea>
-            <div class="field-hint" id="denyHint-${r.id}">Required — this will be shown to the franchise owner.</div>
+            <textarea id="denyText-${r.key}" placeholder="e.g. Uploaded document is unclear, please resubmit."></textarea>
+            <div class="field-hint" id="denyHint-${r.key}">Required — this will be shown to the franchise owner.</div>
             <div class="deny-box-actions">
-              <button class="btn-sm-secondary req-deny-cancel-btn" data-req-id="${r.id}">Cancel</button>
-              <button class="btn-sm-danger req-deny-confirm-btn" data-req-id="${r.id}">Confirm Denial</button>
+              <button class="btn-sm-secondary req-deny-cancel-btn" data-req-id="${r.key}">Cancel</button>
+              <button class="btn-sm-danger req-deny-confirm-btn" data-req-id="${r.key}">Confirm Denial</button>
             </div>
           </div>
         ` : ''}
@@ -369,7 +384,7 @@
     fsModalBody.querySelectorAll('.req-doc-thumb').forEach(img => img.addEventListener('click', () => openLightbox(img.dataset.src)));
 
     fsModalBody.querySelectorAll('.req-approve-btn').forEach(btn => btn.addEventListener('click', () => {
-      approveRequest(Number(btn.dataset.reqId), btn);
+      approveRequest(btn.dataset.reqId, btn);
     }));
 
     fsModalBody.querySelectorAll('.req-deny-toggle-btn').forEach(btn => btn.addEventListener('click', () => {
@@ -382,9 +397,9 @@
     }));
 
     fsModalBody.querySelectorAll('.req-deny-confirm-btn').forEach(btn => btn.addEventListener('click', () => {
-      const reqId = Number(btn.dataset.reqId);
-      const textarea = document.getElementById(`denyText-${reqId}`);
-      const hint = document.getElementById(`denyHint-${reqId}`);
+      const reqKey = btn.dataset.reqId;
+      const textarea = document.getElementById(`denyText-${reqKey}`);
+      const hint = document.getElementById(`denyHint-${reqKey}`);
       const reason = textarea.value.trim();
       if (!reason) {
         hint.textContent = 'Please provide a reason for denial.';
@@ -392,21 +407,21 @@
         textarea.focus();
         return;
       }
-      denyRequest(reqId, reason, btn);
+      denyRequest(reqKey, reason, btn);
     }));
   }
 
-  async function approveRequest(reqId, button) {
+  async function approveRequest(reqKey, button) {
     const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
     if (!g) return;
-    const r = g.requests.find(x => x.id === reqId);
+    const r = g.requests.find(x => x.key === reqKey);
     if (!r) return;
     setRequestProcessing(button, true);
     try {
       await pendingRequest({ action: 'approve', type: r.actionType, id: r.id });
       r.status = 'Approved'; r.denialReason = '';
       renderFsModal();
-      const card = fsModalBody.querySelector(`[data-req-id="${reqId}"]`);
+      const card = fsModalBody.querySelector(`[data-req-id="${reqKey}"]`);
       if (card) card.classList.add('approval-complete');
       await new Promise(resolve => setTimeout(resolve, 650));
       updateStats(); render();
@@ -414,10 +429,10 @@
     finally { setRequestProcessing(button, false); }
   }
 
-  async function denyRequest(reqId, reason, button) {
+  async function denyRequest(reqKey, reason, button) {
     const g = franchiseGroups.find(x => String(x.id) === String(currentGroupId));
     if (!g) return;
-    const r = g.requests.find(x => x.id === reqId);
+    const r = g.requests.find(x => x.key === reqKey);
     if (!r) return;
     setRequestProcessing(button, true);
     try {
@@ -447,7 +462,7 @@
     let approvalFailed = false;
     try {
     for (const request of requestsToApprove) {
-      const card = fsModalBody.querySelector(`[data-req-id="${request.id}"]`);
+      const card = fsModalBody.querySelector(`[data-req-id="${request.key}"]`);
       if (card) card.classList.add('is-processing');
       try {
         await pendingRequest({ action: 'approve', type: request.actionType, id: request.id });

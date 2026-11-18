@@ -27,6 +27,28 @@ function saveDataUrlUpload($dataUrl, $category, $existingPath = null)
     return 'uploads/' . $filename;
 }
 
+function saveImageDataUrlUpload($dataUrl, $category, $existingPath = null)
+{
+    if ($dataUrl === null || $dataUrl === '') return $existingPath;
+    if (!is_string($dataUrl) || strpos($dataUrl, 'data:') !== 0) {
+        throw new InvalidArgumentException('Please upload a JPEG, PNG, GIF, or WebP image.');
+    }
+    if (!preg_match('/^data:image\/(jpeg|png|gif|webp);base64,([A-Za-z0-9+\/=]+)$/D', $dataUrl, $matches)) {
+        throw new InvalidArgumentException('Please upload a JPEG, PNG, GIF, or WebP image.');
+    }
+
+    $contents = base64_decode($matches[2], true);
+    if ($contents === false || strlen($contents) > 5 * 1024 * 1024) {
+        throw new InvalidArgumentException('Uploaded images must be valid and no larger than 5 MB.');
+    }
+    $imageInfo = @getimagesizefromstring($contents);
+    if (!$imageInfo || !in_array($imageInfo['mime'] ?? '', ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
+        throw new InvalidArgumentException('The uploaded file is not a supported image.');
+    }
+
+    return saveDataUrlUpload($dataUrl, $category, $existingPath);
+}
+
 function uploadUrl($path)
 {
     return $path && strpos($path, 'uploads/') === 0 ? '../' . ltrim($path, '/') : '';

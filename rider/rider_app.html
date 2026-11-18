@@ -6,7 +6,7 @@
 <title>Franchise Manager</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../rider/css/rider_app.css?v=20260914">
+<link rel="stylesheet" href="../rider/css/rider_app.css?v=20261118-renewal-records">
 
 
 </head>
@@ -14,17 +14,46 @@
 
 <!-- ============ LOGIN ============ -->
 <div class="login-screen" id="login-screen">
+  <div class="login-progress rider-hidden" id="login-progress" role="status" aria-live="polite" aria-hidden="true">
+    <div class="login-progress-card">
+      <span class="login-progress-spinner" aria-hidden="true"></span>
+      <p class="login-progress-message">Login successful!</p>
+      <p class="login-progress-detail">Opening your account…</p>
+    </div>
+  </div>
+
+  <section class="login-hero" aria-label="Franchise Manager">
+    <div class="login-hero-orbit login-hero-orbit-one"></div>
+    <div class="login-hero-orbit login-hero-orbit-two"></div>
+    <div class="login-hero-content">
+      <div class="login-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="16" cy="46" r="7"/><circle cx="48" cy="46" r="7"/>
+          <path d="M16 46 26 24h14l8 22M26 24l-4-10h-8M40 24l4 10h12"/>
+          <path d="M28 34h13M31 24l-3 10"/>
+        </svg>
+      </div>
+      <span class="login-hero-eyebrow">Reina Mercedes · Isabela</span>
+      <h1>Franchise Manager</h1>
+      <p>One place to manage your franchise, drivers, and tricycle units.</p>
+      <div class="login-hero-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
+    <div class="login-hero-road" aria-hidden="true"><span></span></div>
+  </section>
 
   <div class="login-panel">
     <div class="login-wrap">
 
-      <div class="login-heading">
-        <h2>Welcome Back!</h2>
-        <p>Please sign in to your Franchise Manager account.</p>
+      <div class="login-heading" id="login-welcome-heading">
+        <span class="login-heading-tag"><span></span> Secure account access</span>
+        <h2 id="login-heading-title">Welcome Back!</h2>
+        <p id="login-heading-description">Please sign in to continue to your account.</p>
       </div>
 
+      <div class="login-reset-status" id="login-reset-status" role="status" aria-live="polite"></div>
+
       <form id="login-form" novalidate>
-        <div class="login-error" id="login-error">
+        <div class="login-error" id="login-error" role="alert" aria-live="assertive">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           <span id="login-error-msg">Please enter both your username and password.</span>
         </div>
@@ -42,7 +71,7 @@
           <div class="login-input-group">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
             <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
-            <button type="button" class="login-eye" id="login-toggle-pw" aria-label="Show password">
+            <button type="button" class="login-eye" id="login-toggle-pw" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
@@ -56,7 +85,7 @@
       </form>
 
       <form id="signup-form" class="rider-hidden" novalidate>
-        <div class="login-error" id="signup-error">
+        <div class="login-error" id="signup-error" role="alert" aria-live="assertive">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           <span id="signup-error-msg">Please complete all fields.</span>
         </div>
@@ -82,7 +111,7 @@
           <div class="login-input-group">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
             <input type="password" id="signup-password" placeholder="At least 8 characters" autocomplete="new-password">
-            <button type="button" class="login-eye" id="signup-toggle-pw" aria-label="Show password">
+            <button type="button" class="login-eye" id="signup-toggle-pw" aria-label="Show password" aria-pressed="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
@@ -91,13 +120,29 @@
         <button type="submit" class="login-submit">Create Account</button>
       </form>
 
-      <div class="login-row login-switch">
-        <span id="auth-switch-text">Don't have an account?</span>
-        <button type="button" class="login-forgot" id="auth-switch-btn">Sign Up</button>
-      </div>
+
+
+      <form id="password-reset-request-form" class="rider-hidden" novalidate>
+        <div class="login-heading">
+          <h2>Reset your password</h2>
+          <p>Enter the email address associated with your account.</p>
+        </div>
+        <div class="login-field">
+          <label for="reset-email">Email Address</label>
+          <div class="login-input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <input type="email" id="reset-email" placeholder="Enter your account email" autocomplete="email" required>
+          </div>
+        </div>
+        <button type="submit" class="login-submit">Send Reset Link</button>
+        <div class="login-row login-reset-back">
+          <button type="button" class="login-forgot" id="reset-request-back">Back to sign in</button>
+        </div>
+      </form>
+
 
       <div class="login-footer">
-        <p>Tricycle Franchise Management System</p>
+        <p>Reina Mercedes Tricycle Franchise Management System <span>
       </div>
 
     </div>
@@ -116,6 +161,10 @@
     <button class="nav-btn" data-nav="drivers">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
       <span>Drivers</span>
+    </button>
+    <button class="nav-btn" data-nav="owner-tricycles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"/><path d="M14 7v5h5"/></svg>
+      <span>My Units</span>
     </button>
     <button class="nav-btn" data-nav="renew">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
@@ -213,6 +262,34 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           Register Franchise
         </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FRANCHISE OWNER TRICYCLES ============ -->
+  <section class="screen" id="screen-owner-tricycles">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <h1>My Tricycles</h1>
+        </div>
+        <button class="icon-btn" aria-label="Notifications" data-nav="notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="container owner-tricycle-container">
+      <button class="btn gold full-width-btn" id="btn-add-owner-tricycle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add My Tricycle
+      </button>
+      <p class="section-label">My Tricycles</p>
+      <div class="list" id="owner-tricycle-list"></div>
+      <div class="empty-state rider-hidden" id="owner-tricycle-empty">
+        <p>No owner tricycles have been added yet.</p>
+      </div>
+      <div class="empty-state rider-hidden" id="owner-tricycle-unavailable">
+        <p>Register and get your franchise approved before adding owner tricycles.</p>
       </div>
     </div>
   </section>
@@ -324,11 +401,27 @@
     </div>
     <div class="profile-hero">
       <div class="summary-card profile-summary-card">
-        <div class="profile-avatar">R</div>
-        <div class="profile-name" id="profile-display-name">Rider</div>
+        <div class="profile-photo-wrap">
+          <button type="button" class="profile-avatar" id="profile-avatar-button" aria-label="Profile photo options" aria-haspopup="dialog" aria-controls="profile-photo-menu">R</button>
+          <input type="file" id="profile-photo-input" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+        </div>
+        <div class="profile-identity"><p class="profile-card-label">Your account</p><div class="profile-name" id="profile-display-name">Rider</div>
         <div class="profile-role" id="profile-display-role">Rider</div>
+          <button type="button" class="profile-photo-upload" id="profile-photo-upload" hidden>Upload profile photo</button>
+          <p class="profile-photo-hint" id="profile-photo-hint">Tap your profile picture for photo options</p>
+          <span class="sr-only" id="profile-photo-status" role="status" aria-live="polite"></span>
+        </div>
       </div>
     </div>
+    <section class="profile-information" aria-labelledby="profile-info-heading">
+      <div class="profile-information-heading"><span class="profile-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span><div><h2 id="profile-info-heading">Profile information</h2><p>Your personal and contact details</p></div></div>
+      <dl class="profile-info-list"><div class="profile-info-row"><dt>Full name</dt><dd id="profile-info-name">—</dd></div>
+<div class="profile-info-row"><dt>Middle name</dt><dd id="profile-info-middle">—</dd></div>
+<div class="profile-info-row"><dt>Account type</dt><dd id="profile-info-role">—</dd></div>
+<div class="profile-info-row"><dt>Franchise / Terminal</dt><dd id="profile-info-franchise">—</dd></div>
+<div class="profile-info-row"><dt>Email address</dt><dd id="profile-info-email">—</dd></div>
+</dl>
+    </section>
     <div class="profile-list">
       <button class="profile-row profile-settings-btn" id="open-account-settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.6.7 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
@@ -358,14 +451,21 @@
       </button>
     </div>
     <div class="detail-hero">
-      <div class="detail-hero-icon">
+      <div class="vehicle-photo-control">
+        <button class="detail-hero-icon vehicle-photo-button" id="td-photo-view" type="button" aria-label="Upload a tricycle image">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"/><path d="M14 7v5h5"/></svg>
+        </button>
+        <button class="vehicle-photo-upload" id="td-photo-upload-trigger" type="button" aria-label="Upload or change tricycle image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/><circle cx="12" cy="13" r="3"/><path d="M12 2v6m-3-3 3 3 3-3"/></svg>
+        </button>
       </div>
       <div>
         <div class="detail-hero-title" id="td-unit-no"></div>
         <div class="detail-hero-sub" id="td-plate-sub"></div>
+        <button class="vehicle-photo-reset rider-hidden" id="td-photo-reset" type="button">Use default tricycle icon</button>
       </div>
     </div>
+    <input class="sr-only" id="td-photo-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" aria-label="Choose tricycle image">
   </div>
   <div class="detail-body">
     <div class="route">
@@ -392,7 +492,7 @@
             </div>
             <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          <div class="acc-content"><div class="acc-inner"><div class="doc-grid" id="td-documents"></div></div></div>
+          <div class="acc-content"><div class="acc-inner"><div class="driver-doc-grid" id="td-documents"></div></div></div>
         </div>
       </div>
 
@@ -413,9 +513,23 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
       </button>
       <h2>Driver Details</h2>
-      <button class="icon-btn" aria-label="More options">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-      </button>
+      <div class="driver-actions">
+        <button class="icon-btn" id="dd-actions-toggle" type="button" aria-label="More driver actions" aria-expanded="false" aria-controls="dd-actions-menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+        <div class="driver-actions-menu" id="dd-actions-menu" role="menu" aria-labelledby="dd-actions-toggle">
+          <button class="driver-action-item rider-hidden" id="dd-assign-btn" type="button" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2v5h-2M8 12h6M11 9v6"/></svg>
+            Assign Tricycle
+          </button>
+          <button class="driver-action-item rider-hidden" id="dd-edit-btn" type="button" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 4 4 4M4 20l4-.8L19 8a2.8 2.8 0 0 0-4-4L4 15z"/></svg>
+            Edit Driver
+          </button>
+          <button class="driver-action-item danger rider-hidden" id="dd-remove-btn" type="button" role="menuitem">Remove Driver</button>
+          <button class="driver-action-item danger rider-hidden" id="dd-status-btn" type="button" role="menuitem">Manage Status</button>
+        </div>
+      </div>
     </div>
     <div class="detail-hero">
       <div class="detail-hero-icon">
@@ -465,19 +579,11 @@
             </div>
             <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          <div class="acc-content"><div class="acc-inner"><div class="doc-grid" id="dd-documents"></div></div></div>
+          <div class="acc-content"><div class="acc-inner"><div class="driver-doc-grid" id="dd-documents"></div></div></div>
         </div>
       </div>
 
     </div>
-  </div>
-  <div class="action-bar">
-    <button class="btn secondary" data-close="detail-driver">Close</button>
-    <select id="dd-tricycle-select" class="detail-action-select rider-hidden" aria-label="Select tricycle to assign"></select>
-    <button class="btn primary rider-hidden" id="dd-assign-btn">Assign Tricycle</button>
-    <button class="btn primary rider-hidden" id="dd-edit-btn">Edit Driver</button>
-    <button class="btn danger rider-hidden" id="dd-remove-btn" type="button">Remove</button>
-    <button class="btn danger rider-hidden" id="dd-status-btn" type="button">Manage Status</button>
   </div>
 </div>
 
@@ -573,6 +679,8 @@
         <div class="field"><label for="t-engine">Engine Number</label><input id="t-engine" required placeholder="4G15-XXXXXX"></div>
         <div class="field"><label for="t-chassis">Chassis Number</label><input id="t-chassis" required placeholder="CH-2026-XXXXX"></div>
         <div class="field"><label for="t-color">Color</label><input id="t-color" required placeholder="e.g. Red"></div>
+        <div class="field"><label for="t-or-number">Official Receipt Number</label><input id="t-or-number" placeholder="Enter the number shown on the OR"></div>
+        <div class="field"><label for="t-image">Tricycle Image <span class="optional-label">(optional)</span></label><input id="t-image" type="file" accept="image/jpeg,image/png,image/gif,image/webp"><small class="field-note">Upload a custom vehicle image (JPEG, PNG, GIF, or WebP; maximum 5 MB). Leave empty to use the default icon.</small></div>
       </div>
 
       <div class="form-section">
@@ -603,6 +711,50 @@
   </div>
 </div>
 
+<!-- ============ ADD FRANCHISE OWNER TRICYCLE ============ -->
+<div class="detail-screen" id="screen-add-owner-tricycle">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" data-close="screen-add-owner-tricycle" aria-label="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Add My Tricycle</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="add-owner-tricycle-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="18" height="10" rx="2"/><path d="M19 10h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2M5 17v2M13 17v2"/></svg>
+          Owner Vehicle Information
+        </div>
+        <div class="field-2col">
+          <div class="field"><label for="ot-brand">Brand</label><input id="ot-brand" required maxlength="100" placeholder="e.g. Honda TMX155"></div>
+          <div class="field"><label for="ot-unit">Body Number / Sticker</label><input id="ot-unit" required maxlength="50" placeholder="e.g. BNS-045"></div>
+          <div class="field"><label for="ot-plate">Plate Number</label><input id="ot-plate" required maxlength="30" placeholder="LMK-3452"></div>
+        </div>
+        <div class="field"><label for="ot-engine">Engine Number</label><input id="ot-engine" required maxlength="100"></div>
+        <div class="field"><label for="ot-chassis">Chassis Number</label><input id="ot-chassis" required maxlength="100"></div>
+        <div class="field"><label for="ot-color">Color</label><input id="ot-color" required maxlength="50" placeholder="e.g. Red"></div>
+        <div class="field"><label for="ot-or-number">Official Receipt Number</label><input id="ot-or-number" maxlength="255" placeholder="Enter the number shown on the OR"></div>
+        <div class="field"><label for="ot-image">Tricycle Image <span class="optional-label">(optional)</span></label><input id="ot-image" type="file" accept="image/jpeg,image/png,image/gif,image/webp"><small class="field-note">Upload a custom vehicle image (JPEG, PNG, GIF, or WebP; maximum 5 MB). Leave empty to use the default icon.</small></div>
+        <div class="field">
+          <label for="ot-orcr-image">OR/CR Image Receipt</label>
+          <input id="ot-orcr-image" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
+          <small class="field-note">Upload a clear image of the OR/CR as proof of vehicle documentation (maximum 5 MB).</small>
+        </div>
+      </div>
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn gold full-width-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Save Owner Tricycle
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ============ REGISTER FRANCHISE (full screen form) ============ -->
 <div class="detail-screen register-overlay" id="screen-register-franchise">
   <div class="register-modal">
@@ -624,8 +776,8 @@
         </div>
         <div class="field"><label for="rf-name">Franchise Name</label><input id="rf-name" required placeholder="e.g. Santos Franchise"></div>
         <div class="field"><label for="rf-owner">Owner Name</label><input id="rf-owner" required placeholder="e.g. Ricardo Santos"></div>
-        <div class="field"><label for="rf-address">Address</label><textarea id="rf-address" rows="2" placeholder="Complete address"></textarea></div>
-        <div class="field-note">The franchise validity period is assigned by the LGU from January 1 through December 31 of the applicable year.</div>
+        <div class="field"><label for="rf-address">Barangay</label><textarea id="rf-address" rows="2" placeholder="Enter barangay"></textarea></div>
+        <div class="field-note">Franchise validity runs for one year from the issue date to the same date the following year.</div>
       </div>
 
       <div class="form-section">
@@ -634,6 +786,39 @@
           Application / Payment Receipt
         </div>
         <input id="rf-receipt" type="file" accept="image/*" required>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          Cedula
+        </div>
+        <div class="field">
+          <label for="rf-cedula">Cedula Image</label>
+          <input id="rf-cedula" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
+          <small class="field-note">Upload a clear image of your Cedula (JPEG, PNG, GIF, or WebP; maximum 5 MB).</small>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h2M15 9h2v6h-2z"/></svg>
+          Driver's License
+        </div>
+        <div class="field">
+          <label for="rf-drivers-license">Driver's License Number</label>
+          <input id="rf-drivers-license" required placeholder="Enter driver's license number">
+        </div>
+        <div class="field">
+          <label for="rf-drivers-license-photo">Driver's License Front Photo</label>
+          <input id="rf-drivers-license-photo" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
+          <small class="field-note">Upload the front of your driver's license (JPEG, PNG, GIF, or WebP; maximum 5 MB).</small>
+        </div>
+        <div class="field">
+          <label for="rf-drivers-license-back-photo">Driver's License Back Photo</label>
+          <input id="rf-drivers-license-back-photo" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
+          <small class="field-note">Upload the back of your driver's license (JPEG, PNG, GIF, or WebP; maximum 5 MB).</small>
+        </div>
       </div>
 
       <div class="form-section form-section-submit">
@@ -647,7 +832,16 @@
 </div>
 </div>
 
-<!-- ============ ACCOUNT SETTINGS (full screen form) ============ -->
+<dialog id="profile-photo-menu" class="profile-photo-dialog" aria-labelledby="profile-photo-menu-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <h2 id="profile-photo-menu-title">Profile photo</h2>
+  <p id="profile-photo-menu-description">Choose what you would like to do.</p>
+  <button type="button" id="profile-photo-view" class="profile-photo-menu-option">View photo</button>
+  <button type="button" id="profile-photo-change" class="profile-photo-menu-option">Upload profile photo</button>
+  <form method="dialog"><button class="profile-photo-menu-cancel" type="submit">Cancel</button></form>
+</dialog>
+
+<!-- ============ ACCOUNT SETTINGS MENU ============ -->
 <div class="detail-screen" id="screen-account-settings">
   <div class="detail-header detail-header-form">
     <div class="detail-header-row detail-header-row-form">
@@ -659,29 +853,140 @@
     </div>
   </div>
   <div class="detail-body detail-body-form">
+    <div class="account-settings-intro"><span class="eyebrow">YOUR ACCOUNT</span><h3>Make it yours</h3><p>Manage your details, documents and account security.</p></div><div class="account-settings-menu">
+      <button type="button" class="account-settings-option" data-account-settings-open="screen-account-personal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        <span>Personal Details</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <button type="button" class="account-settings-option" data-account-settings-open="screen-account-documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16h14V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+        <span>Franchise Documents</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <button type="button" class="account-settings-option" data-account-settings-open="screen-account-password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3M12 14v3"/></svg>
+        <span>Change Password</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PERSONAL DETAILS ============ -->
+<div class="detail-screen" id="screen-account-personal">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" type="button" data-account-settings-back aria-label="Back to Account Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Personal Details</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
     <form id="account-settings-form">
       <div class="form-section">
         <div class="form-section-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
-          Manager Details
+          Personal Details
         </div>
-          <div class="field"><label for="as-name">Full Name</label><input id="as-name" required value=""></div>
-        <div class="field"><label for="as-role">Role / Position</label><input id="as-role" required value="Franchise Manager"></div>
-        <div class="field"><label for="as-franchise">Franchise / Terminal</label><input id="as-franchise" required value=""></div>
+        <div class="field"><label for="as-name">Full Name</label><input id="as-name" autocomplete="name" required></div>
+        <div class="field"><label for="as-middle-name">Middle Name</label><input id="as-middle-name" autocomplete="additional-name"></div>
+        <div class="field"><label for="as-role">Account Type</label><input id="as-role" readonly></div>
+        <div class="field"><label for="as-franchise">Franchise / Terminal</label><input id="as-franchise" readonly></div>
       </div>
       <div class="form-section">
         <div class="form-section-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
           Contact
         </div>
-        <div class="field"><label for="as-email">Email Address</label><input id="as-email" type="email" required value="migi.cruz@stacruzterminal.gov.ph"></div>
-        <div class="field"><label for="as-contact">Contact Number</label><input id="as-contact" type="tel" required value="0917 800 2214"></div>
+        <div class="field"><label for="as-email">Email Address</label><input id="as-email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="as-contact">Contact Number</label><input id="as-contact" type="tel" autocomplete="tel"></div>
       </div>
       <div class="form-section form-section-submit">
         <button type="submit" class="btn gold full-width-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           Save Changes
         </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ FRANCHISE DOCUMENTS ============ -->
+<div class="detail-screen" id="screen-account-documents">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" type="button" data-account-settings-back aria-label="Back to Account Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Franchise Documents</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <div class="account-documents-heading">
+      <span>Required Documents</span>
+      <small>Select a document to view it.</small>
+    </div>
+    <div class="account-document-list" id="as-document-preview">
+      <div class="empty-state">Application receipt, Cedula, and both sides of your driver's license will appear here when available.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CHANGE PASSWORD ============ -->
+<div class="detail-screen" id="screen-account-password">
+  <div class="detail-header detail-header-form">
+    <div class="detail-header-row detail-header-row-form">
+      <button class="icon-btn" type="button" data-account-settings-back aria-label="Back to Account Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h2>Change Password</h2>
+      <div class="detail-header-spacer"></div>
+    </div>
+  </div>
+  <div class="detail-body detail-body-form">
+    <form id="account-password-form">
+      <div class="form-section">
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/><path d="M12 14v3"/></svg>
+          Change Password
+        </div>
+        <div class="field">
+          <label for="account-current-password">Current Password</label>
+          <div class="password-field-control">
+            <input id="account-current-password" type="password" autocomplete="current-password" required>
+            <button type="button" class="password-field-toggle" data-password-toggle="account-current-password" aria-label="Show current password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 10c2.2 3.5 5.2 5.5 9 5.5s6.8-2 9-5.5"/><path d="m6 11-1 2"/><path d="m12 15.5v2"/><path d="m18 11 1 2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="account-new-password">New Password</label>
+          <div class="password-field-control">
+            <input id="account-new-password" type="password" autocomplete="new-password" minlength="8" required>
+            <button type="button" class="password-field-toggle" data-password-toggle="account-new-password" aria-label="Show new password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 10c2.2 3.5 5.2 5.5 9 5.5s6.8-2 9-5.5"/><path d="m6 11-1 2"/><path d="m12 15.5v2"/><path d="m18 11 1 2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="account-confirm-password">Confirm New Password</label>
+          <div class="password-field-control">
+            <input id="account-confirm-password" type="password" autocomplete="new-password" minlength="8" required>
+            <button type="button" class="password-field-toggle" data-password-toggle="account-confirm-password" aria-label="Show confirm password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M3 10c2.2 3.5 5.2 5.5 9 5.5s6.8-2 9-5.5"/><path d="m6 11-1 2"/><path d="m12 15.5v2"/><path d="m18 11 1 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="form-section form-section-submit">
+        <button type="submit" class="btn secondary full-width-btn">Change Password</button>
       </div>
     </form>
   </div>
@@ -699,6 +1004,24 @@
     <div class="confirm-actions">
       <button class="btn secondary" id="confirm-cancel">Cancel</button>
       <button class="btn danger" id="confirm-ok">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="assign-tricycle-overlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="assign-tricycle-title">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="assign-tricycle-title">Assign Tricycle</div>
+    <div class="sheet-desc">Choose an available tricycle to assign to this driver.</div>
+    <div class="field">
+      <label for="dd-tricycle-select">Available Tricycle</label>
+      <select id="dd-tricycle-select" class="assign-tricycle-select">
+        <option value="">Select tricycle</option>
+      </select>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn secondary" id="assign-tricycle-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="assign-tricycle-confirm" type="button">Assign</button>
     </div>
   </div>
 </div>
@@ -753,6 +1076,7 @@
   <span id="toast-msg">Saved successfully</span>
 </div>
 
-<script src="../rider/js/rider_app.js" defer></script>
+<script src="../rider/js/rider_app.js?v=20261118-renewal-records" defer></script>
+<script src="../assets/official-header.js" defer></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $modelsPath = __DIR__ . '/../models';
 require_once $modelsPath . '/functions.php';
+require_once $modelsPath . '/franchise_dates.php';
 require_once $modelsPath . '/notifications.php';
 require_once $modelsPath . '/notification_triggers.php';
 require_once $modelsPath . '/upload.php';
@@ -11,8 +12,17 @@ require_once $modelsPath . '/upload.php';
 function ensureFranchiseDocumentsTable()
 {
 	global $conn;
-	$query = 'CREATE TABLE IF NOT EXISTS franchise_documents (document_id INT NOT NULL AUTO_INCREMENT, franchise_id INT NOT NULL, receipt_photo VARCHAR(255) DEFAULT NULL, PRIMARY KEY (document_id), UNIQUE KEY franchise_id (franchise_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
-	if (!mysqli_query($conn, $query)) throw new Exception('Unable to prepare franchise document storage.');
+	$query = 'CREATE TABLE IF NOT EXISTS franchise_documents (document_id INT NOT NULL AUTO_INCREMENT, franchise_id INT NOT NULL, receipt_photo VARCHAR(255) DEFAULT NULL, cedula_photo VARCHAR(255) DEFAULT NULL, drivers_license VARCHAR(100) DEFAULT NULL, drivers_license_photo VARCHAR(255) DEFAULT NULL, drivers_license_back_photo VARCHAR(255) DEFAULT NULL, PRIMARY KEY (document_id), UNIQUE KEY franchise_id (franchise_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+	if (!mysqli_query($conn, $query)) throw new Exception('Unable to prepare franchise document storage: ' . mysqli_error($conn));
+	foreach (['cedula_photo' => 'VARCHAR(255) NULL', 'drivers_license' => 'VARCHAR(100) NULL', 'drivers_license_photo' => 'VARCHAR(255) NULL', 'drivers_license_back_photo' => 'VARCHAR(255) NULL'] as $column => $definition) {
+		$result = mysqli_query($conn, "SHOW COLUMNS FROM franchise_documents LIKE '$column'");
+		if (!$result) throw new RuntimeException('Unable to inspect franchise document storage: ' . mysqli_error($conn));
+		$columnExists = mysqli_num_rows($result) > 0;
+		mysqli_free_result($result);
+		if (!$columnExists && !mysqli_query($conn, "ALTER TABLE franchise_documents ADD COLUMN $column $definition")) {
+			throw new RuntimeException('Unable to prepare franchise document storage: ' . mysqli_error($conn));
+		}
+	}
 }
 
 function ensureAdminAddressColumn()
@@ -32,13 +42,20 @@ function ensureFranchiseApplicationsTable()
 		franchise_id INT NULL, franchise_name VARCHAR(150) NULL, application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending', admin_comments TEXT NULL,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		address TEXT NULL, issue_date DATE NULL, expiry_date DATE NULL, receipt_photo VARCHAR(255) NULL
+		address TEXT NULL, issue_date DATE NULL, expiry_date DATE NULL,
+		receipt_photo VARCHAR(255) NULL, cedula_document VARCHAR(255) NULL,
+		drivers_license VARCHAR(100) NULL, drivers_license_photo VARCHAR(255) NULL,
+		drivers_license_back_photo VARCHAR(255) NULL
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 	if (!mysqli_query($conn, $query)) throw new Exception('Unable to prepare franchise application storage.');
-	foreach (['address' => 'TEXT NULL', 'issue_date' => 'DATE NULL', 'expiry_date' => 'DATE NULL', 'receipt_photo' => 'VARCHAR(255) NULL'] as $column => $definition) {
+	foreach (['address' => 'TEXT NULL', 'issue_date' => 'DATE NULL', 'expiry_date' => 'DATE NULL', 'receipt_photo' => 'VARCHAR(255) NULL', 'cedula_document' => 'VARCHAR(255) NULL', 'drivers_license' => 'VARCHAR(100) NULL', 'drivers_license_photo' => 'VARCHAR(255) NULL', 'drivers_license_back_photo' => 'VARCHAR(255) NULL'] as $column => $definition) {
 		$result = mysqli_query($conn, "SHOW COLUMNS FROM franchise_applications LIKE '$column'");
-		if (!$result || mysqli_num_rows($result) === 0) mysqli_query($conn, "ALTER TABLE franchise_applications ADD COLUMN $column $definition");
-		if ($result) mysqli_free_result($result);
+		if (!$result) throw new RuntimeException('Unable to inspect franchise application storage: ' . mysqli_error($conn));
+		$columnExists = mysqli_num_rows($result) > 0;
+		mysqli_free_result($result);
+		if (!$columnExists && !mysqli_query($conn, "ALTER TABLE franchise_applications ADD COLUMN $column $definition")) {
+			throw new RuntimeException('Unable to prepare franchise application storage: ' . mysqli_error($conn));
+		}
 	}
 }
 
@@ -63,7 +80,7 @@ function franchisePayload($data)
 	$ownerEmail = trim($data['ownerEmail'] ?? $data['owner_email'] ?? '');
 	$address = trim($data['address'] ?? '');
 	$issue = $data['issue'] ?? $data['issue_date'] ?? '';
-	$expiry = $data['expiry'] ?? $data['expiry_date'] ?? '';
+	$expiry = $issue !== '' ? franchiseAnniversary($issue) : '';
 	$status = $data['status'] ?? $data['renewal_status'] ?? 'Active';
 	if ($name === '' || $owner === '' || $ownerEmail === '' || $address === '' || $issue === '' || $expiry === '') {
 		respond(['success' => false, 'message' => 'Franchise name, owner name, owner email, franchise address, issue date, and expiry date are required.'], 422);
@@ -98,8 +115,8 @@ function listFranchises()
 	ensureAdminAddressColumn();
 	$franchises = getAllRecords('franchises', 'ORDER BY franchise_id DESC');
 	$documents = getAllRecords('franchise_documents');
-	$receipts = [];
-	foreach ($documents as $document) $receipts[(int) $document['franchise_id']] = $document['receipt_photo'];
+	$documentsByFranchise = [];
+	foreach ($documents as $document) $documentsByFranchise[(int) $document['franchise_id']] = $document;
 	$assignments = getAllRecords('franchise_tricycle');
 	$tricycles = getAllRecords('tricycles');
 	$ownerAccounts = getAllRecords('admins', "WHERE role = 'Admin' AND status = 'Active' ORDER BY first_name, last_name, username");
@@ -109,9 +126,15 @@ function listFranchises()
 	foreach ($assignments as $assignment) {
 		$assigned[(int) $assignment['franchise_id']][] = $tricycleNames[(int) $assignment['tricycle_id']] ?? '';
 	}
+	$ownerTricycles = getAllRecords('franchise_owner_tricycle', 'WHERE status <> ? ORDER BY owner_tricycle_id DESC', ['Archived']);
+	foreach ($ownerTricycles as $ownerTricycle) {
+		$assigned[(int) $ownerTricycle['franchise_id']][] = $ownerTricycle['plate_number'] ?? '';
+	}
 
 	foreach ($franchises as &$franchise) {
 		$id = (int) $franchise['franchise_id'];
+		$document = $documentsByFranchise[$id] ?? [];
+		$receiptPath = $document['receipt_photo'] ?? '';
 		$franchise = [
 			'id' => $id,
 			'name' => $franchise['franchise_name'],
@@ -122,8 +145,12 @@ function listFranchises()
 			'expiry' => $franchise['expiry_date'],
 			'status' => $franchise['renewal_status'],
 			'tricycles' => array_values(array_filter($assigned[$id] ?? [])),
-			'receipt' => $receipts[$id] ? basename($receipts[$id]) : '',
-			'receiptDataUrl' => uploadUrl($receipts[$id] ?? '')
+			'receipt' => $receiptPath ? basename($receiptPath) : '',
+			'receiptDataUrl' => uploadUrl($receiptPath),
+			'cedulaUrl' => uploadUrl($document['cedula_photo'] ?? ''),
+			'driversLicense' => $document['drivers_license'] ?? '',
+			'driversLicenseUrl' => uploadUrl($document['drivers_license_photo'] ?? ''),
+			'driversLicenseBackUrl' => uploadUrl($document['drivers_license_back_photo'] ?? '')
 		];
 	}
 	unset($franchise);
@@ -150,7 +177,11 @@ function listFranchiseApplications()
 			'address' => $application['address'] ?? '', 'issueDate' => $application['issue_date'] ?? '',
 			'expiryDate' => $application['expiry_date'] ?? '', 'status' => $application['status'],
 			'comments' => $application['admin_comments'] ?? '', 'applicationDate' => $application['application_date'],
-			'receiptUrl' => uploadUrl($application['receipt_photo'] ?? '')
+			'receiptUrl' => uploadUrl($application['receipt_photo'] ?? ''),
+			'cedulaUrl' => uploadUrl($application['cedula_document'] ?? ''),
+			'driversLicense' => $application['drivers_license'] ?? '',
+			'driversLicenseUrl' => uploadUrl($application['drivers_license_photo'] ?? ''),
+			'driversLicenseBackUrl' => uploadUrl($application['drivers_license_back_photo'] ?? '')
 		];
 	}, $applications);
 	respond(['success' => true, 'applications' => $applications]);

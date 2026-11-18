@@ -1,0 +1,45 @@
+{
+    "franchises": [
+        {
+            "franchise_id": "27",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "created_at": "2026-10-25 19:35:47"
+        },
+        {
+            "franchise_id": "29",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "created_at": "2026-10-25 20:17:45"
+        },
+        {
+            "franchise_id": "30",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "created_at": "2026-10-25 20:58:37"
+        }
+    ],
+    "applications": [
+        {
+            "application_id": "11",
+            "franchise_id": "30",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "application_date": "2026-10-25 20:58:19"
+        },
+        {
+            "application_id": "10",
+            "franchise_id": "29",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "application_date": "2026-10-25 20:17:16"
+        },
+        {
+            "application_id": "8",
+            "franchise_id": "27",
+            "issue_date": "2027-01-01",
+            "expiry_date": "2028-01-01",
+            "application_date": "2026-10-25 19:35:22"
+        }
+    ]
+}

@@ -45,10 +45,23 @@ function ensureAdminAddressColumn()
 	if ($result) mysqli_free_result($result);
 }
 
+function ensureAdminMiddleNameColumn()
+{
+	global $conn;
+	$result = mysqli_query($conn, "SHOW COLUMNS FROM admins LIKE 'middle_name'");
+	if (!$result) throw new RuntimeException('Unable to check admins.middle_name column.');
+	$columnExists = mysqli_num_rows($result) > 0;
+	mysqli_free_result($result);
+	if (!$columnExists && !mysqli_query($conn, 'ALTER TABLE admins ADD COLUMN middle_name varchar(100) DEFAULT NULL AFTER first_name')) {
+		throw new RuntimeException('Unable to add admins.middle_name column.');
+	}
+}
+
 function accountPayload($data)
 {
 	$payload = [
 		'first_name' => trim($data['firstName'] ?? ''),
+		'middle_name' => trim($data['middleName'] ?? ''),
 		'last_name' => trim($data['lastName'] ?? ''),
 		'username' => trim($data['username'] ?? ''),
 		'email' => trim($data['email'] ?? ''),
@@ -68,6 +81,7 @@ function accountPayload($data)
 function listAccounts()
 {
 	ensureAdminAddressColumn();
+	ensureAdminMiddleNameColumn();
 	$rows = getAllRecords('admins', 'ORDER BY admin_id DESC');
 	$accounts = [];
 	foreach ($rows as $row) {
@@ -76,6 +90,7 @@ function listAccounts()
 			'id' => $accountId,
 			'admin_id' => $accountId,
 			'firstName' => $row['first_name'] ?? '',
+			'middleName' => $row['middle_name'] ?? '',
 			'lastName' => $row['last_name'] ?? '',
 			'username' => $row['username'] ?? '',
 			'email' => $row['email'] ?? '',
@@ -102,6 +117,7 @@ function currentAdminInfo()
 try {
 	requireSuperAdmin();
 	ensureAdminAddressColumn();
+	ensureAdminMiddleNameColumn();
 	if ($_SERVER['REQUEST_METHOD'] === 'GET') listAccounts();
 
 	$data = requestData();

@@ -50,7 +50,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 260px;
+    width: 280px;
     flex-shrink: 0;
     background: var(--navy);
     color: #fff;
@@ -116,7 +116,7 @@
     min-width: 0;
     width: 100%;
     max-width: none;
-    margin: 0 0 0 260px;
+    margin: 0 0 0 280px;
     display: block;
   }
 

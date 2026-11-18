@@ -92,6 +92,16 @@
     return `${(first[0] || '').toUpperCase()}${(last[0] || '').toUpperCase()}`;
   }
 
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[character]);
+  }
+
   function formatDateTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -109,7 +119,7 @@
   function render() {
     const term = searchTerm.trim().toLowerCase();
     const filtered = accounts.filter(a => {
-      const fullName = `${a.firstName} ${a.lastName}`.toLowerCase();
+      const fullName = `${a.firstName} ${a.middleName || ''} ${a.lastName}`.toLowerCase();
       const matchesFilter = activeFilter === 'All'
         || (activeFilter === 'Inactive' && a.status === 'Inactive')
         || a.role === activeFilter;
@@ -133,7 +143,7 @@
           <div class="account-cell">
             <div class="avatar ${isSuper ? 'super' : ''}">${initials(a.firstName, a.lastName)}</div>
             <div>
-              <div class="account-name">${a.firstName} ${a.lastName}</div>
+              <div class="account-name">${escapeHtml([a.firstName, a.middleName, a.lastName].filter(Boolean).join(' '))}</div>
               <div class="account-sub">#${String(a.id).padStart(4, '0')}</div>
             </div>
           </div>
@@ -227,6 +237,7 @@
     editingId = id;
     accountModalTitle.textContent = 'Edit Account';
     document.getElementById('fFirstName').value = a.firstName;
+    document.getElementById('fMiddleName').value = a.middleName || '';
     document.getElementById('fLastName').value = a.lastName;
     document.getElementById('fUsername').value = a.username;
     document.getElementById('fEmail').value = a.email;
@@ -276,6 +287,7 @@
 
     const payload = {
       firstName: document.getElementById('fFirstName').value.trim(),
+      middleName: document.getElementById('fMiddleName').value.trim(),
       lastName: document.getElementById('fLastName').value.trim(),
       username: document.getElementById('fUsername').value.trim(),
       email: document.getElementById('fEmail').value.trim(),
@@ -309,10 +321,11 @@
     statusTargetId = id;
     const willDeactivate = a.status === 'Active';
     document.getElementById('statusModalTitle').textContent = willDeactivate ? 'Deactivate Account' : 'Activate Account';
-    document.getElementById('statusTargetName').textContent = `${a.firstName} ${a.lastName}`;
+    const fullName = [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
+    document.getElementById('statusTargetName').textContent = fullName;
     document.getElementById('statusModalText').innerHTML = willDeactivate
-      ? `Are you sure you want to deactivate <b>${a.firstName} ${a.lastName}</b>? They will no longer be able to log in.`
-      : `Are you sure you want to reactivate <b>${a.firstName} ${a.lastName}</b>? They will regain access to the system.`;
+      ? `Are you sure you want to deactivate <b>${escapeHtml(fullName)}</b>? They will no longer be able to log in.`
+      : `Are you sure you want to reactivate <b>${escapeHtml(fullName)}</b>? They will regain access to the system.`;
     const confirmBtn = document.getElementById('statusConfirmBtn');
     confirmBtn.textContent = willDeactivate ? 'Deactivate' : 'Activate';
     confirmBtn.className = willDeactivate ? 'btn-danger' : 'btn-primary';
@@ -348,7 +361,7 @@
     const a = accounts.find(x => x.id === id);
     if (!a) return;
     deletingId = id;
-    document.getElementById('deleteTargetName').textContent = `${a.firstName} ${a.lastName}`;
+    document.getElementById('deleteTargetName').textContent = [a.firstName, a.middleName, a.lastName].filter(Boolean).join(' ');
     deleteModalOverlay.classList.add('open');
   }
 

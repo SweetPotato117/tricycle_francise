@@ -59,6 +59,18 @@ function ensureDriverOwnershipColumn()
 	}
 }
 
+function ensureDriverLicenseBackColumn()
+{
+	global $conn;
+	$check = mysqli_query($conn, "SHOW COLUMNS FROM drivers LIKE 'driver_license_back'");
+	if (!$check) throw new RuntimeException('Unable to inspect driver license image storage: ' . mysqli_error($conn));
+	$columnExists = mysqli_num_rows($check) > 0;
+	mysqli_free_result($check);
+	if (!$columnExists && !mysqli_query($conn, 'ALTER TABLE drivers ADD COLUMN driver_license_back VARCHAR(255) NULL AFTER driver_license')) {
+		throw new RuntimeException('Unable to prepare driver license image storage: ' . mysqli_error($conn));
+	}
+}
+
 function driverPayload($data, $existing = [])
 {
 	$name = trim($data['name'] ?? $data['full_name'] ?? '');
@@ -91,6 +103,7 @@ function driverPayload($data, $existing = [])
 		'or_cr_number' => $orCrNumber,
 		'address' => trim($data['address'] ?? ''),
 		'driver_license' => $existing['driver_license'] ?? null,
+		'driver_license_back' => $existing['driver_license_back'] ?? null,
 		'or_cr' => $existing['or_cr'] ?? null,
 		'president_certificate' => $existing['president_certificate'] ?? null,
 		'status' => $status
@@ -100,6 +113,7 @@ function driverPayload($data, $existing = [])
 function listDrivers()
 {
 	ensureDriverOwnershipColumn();
+	ensureDriverLicenseBackColumn();
 	$adminId = currentAdminId();
 	$driverQuery = isSuperAdmin() ? 'ORDER BY driver_id DESC' : 'WHERE admin_id = ? ORDER BY driver_id DESC';
 	$driverParams = isSuperAdmin() ? [] : [$adminId];
@@ -135,6 +149,7 @@ function listDrivers()
 			'franchiseId' => $franchise ? (int) $franchise['franchise_id'] : null,
 			'status' => $driver['status'],
 			'driverLicense' => uploadUrl($driver['driver_license']),
+			'driverLicenseBack' => uploadUrl($driver['driver_license_back']),
 			'orCr' => uploadUrl($driver['or_cr']),
 			'presidentCertificate' => uploadUrl($driver['president_certificate'])
 		];
@@ -170,6 +185,7 @@ try {
 
 	if ($action === 'create') {
 		ensureDriverOwnershipColumn();
+		ensureDriverLicenseBackColumn();
 		$adminId = currentAdminId();
 		if (!$adminId) respond(['success' => false, 'message' => 'Admin session required.'], 401);
 		$payload = driverPayload($data);
@@ -179,6 +195,8 @@ try {
 		}
 		$payload['admin_id'] = $adminId;
 		$payload['driver_license'] = saveDataUrlUpload($data['driverLicenseData'] ?? '', 'driver_license') ?: 'Not provided';
+		$payload['driver_license_back'] = saveImageDataUrlUpload($data['driverLicenseBackData'] ?? '', 'driver_license_back');
+		if (!$payload['driver_license_back']) respond(['success' => false, 'message' => "The driver's license back image is required."], 422);
 		$payload['or_cr'] = saveDataUrlUpload($data['orCrData'] ?? '', 'or_cr');
 		$payload['president_certificate'] = saveDataUrlUpload($data['presidentCertificateData'] ?? '', 'president_certificate');
 		$newId = insertSomething('drivers', $payload);
@@ -187,6 +205,7 @@ try {
 
 	if ($action === 'update' && $id) {
 		ensureDriverOwnershipColumn();
+		ensureDriverLicenseBackColumn();
 		$existing = getRecord('drivers', 'driver_id = ?', [$id]);
 		if (!$existing) {
 			respond(['success' => false, 'message' => 'Driver not found.'], 404);
@@ -194,6 +213,7 @@ try {
 		if (!isSuperAdmin() && (int) $existing['admin_id'] !== currentAdminId()) respond(['success' => false, 'message' => 'You can only edit your own driver records.'], 403);
 		$payload = driverPayload($data, $existing);
 		$payload['driver_license'] = saveDataUrlUpload($data['driverLicenseData'] ?? '', 'driver_license', $existing['driver_license']) ?: 'Not provided';
+		$payload['driver_license_back'] = saveImageDataUrlUpload($data['driverLicenseBackData'] ?? '', 'driver_license_back', $existing['driver_license_back'] ?? null);
 		$payload['or_cr'] = saveDataUrlUpload($data['orCrData'] ?? '', 'or_cr', $existing['or_cr']);
 		$payload['president_certificate'] = saveDataUrlUpload($data['presidentCertificateData'] ?? '', 'president_certificate', $existing['president_certificate']);
 		updateRecord('drivers', $payload, 'driver_id = ?', [$id]);
@@ -243,5 +263,8 @@ try {
 
 	respond(['success' => false, 'message' => 'Invalid request.'], 400);
 } catch (Throwable $error) {
+	if ($error instanceof InvalidArgumentException) {
+		respond(['success' => false, 'message' => $error->getMessage()], 422);
+	}
 	respond(['success' => false, 'message' => 'Unable to process driver request.'], 500);
 }

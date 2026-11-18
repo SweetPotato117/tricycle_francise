@@ -40,6 +40,57 @@ function notifySuperAdminsOfSubmission($type, $title, $message, $relatedId = nul
 }
 
 /**
+ * Notify an account holder and active Super Admins after a password change.
+ */
+function notifyAccountPasswordChanged($accountId, $accountType, $accountName, $accountEmail)
+{
+	$changedAt = date('F j, Y \a\t g:i A');
+	$accountMessage = "Your account password was changed on $changedAt. If you did not make this change, contact the Super Admin immediately.";
+	$deliverySucceeded = true;
+
+	if (filter_var($accountEmail, FILTER_VALIDATE_EMAIL)) {
+		if (!createNotification('Password Changed', $accountMessage, 'Security', 'warning', $accountEmail, $accountId, strtolower($accountType) . '_password_changed', false)) {
+			error_log("Unable to create password-change notification for $accountType ID $accountId.");
+			$deliverySucceeded = false;
+		}
+		if (!sendNotificationEmail($accountEmail, 'Password Changed', $accountMessage, 'Security')) {
+			error_log("Unable to send password-change email for $accountType ID $accountId.");
+			$deliverySucceeded = false;
+		}
+	} else {
+		error_log("Unable to send password-change notification for $accountType ID $accountId: invalid email address.");
+		$deliverySucceeded = false;
+	}
+
+	try {
+		$superAdminEmails = getSuperAdminEmails();
+	} catch (Throwable $error) {
+		error_log("Unable to load Super Admin recipients for $accountType password-change notification: " . $error->getMessage());
+		return false;
+	}
+
+	if (!$superAdminEmails) {
+		error_log("No active Super Admins found for password-change notification for $accountType ID $accountId.");
+		$deliverySucceeded = false;
+	}
+
+	foreach ($superAdminEmails as $email) {
+		$adminMessage = "$accountType \"$accountName\" changed their account password on $changedAt.";
+		$relatedType = strtolower($accountType) . '_password_changed';
+		if (!createNotification("$accountType Password Changed", $adminMessage, 'Admin', 'warning', $email, $accountId, $relatedType, false)) {
+			error_log("Unable to create Super Admin password-change notification for $accountType ID $accountId.");
+			$deliverySucceeded = false;
+		}
+		if (!sendNotificationEmail($email, "$accountType Password Changed", $adminMessage, 'Admin')) {
+			error_log("Unable to send password-change email to Super Admin address $email.");
+			$deliverySucceeded = false;
+		}
+	}
+
+	return $deliverySucceeded;
+}
+
+/**
  * Trigger franchise status change notification
  */
 function triggerFranchiseStatusNotification($franchise_id, $franchise_name, $owner_email, $new_status, $admin_email = null)

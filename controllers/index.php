@@ -76,5 +76,5 @@ if ($_SESSION['admin_role'] === 'Super Admin') {
     );
 }
 
-header('Location: ../admin/dashboard.html');
+header('Location: ../index.html?login=success');
 exit;

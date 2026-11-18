@@ -41,7 +41,7 @@
 
   async function loadNotifications() {
     try {
-      const response = await fetch(notificationApi);
+      const response = await fetch(notificationApi, { cache: 'no-store' });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load notifications.');
       notifications = result.notifications;

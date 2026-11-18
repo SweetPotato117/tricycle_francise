@@ -98,18 +98,20 @@ const TFMSLoader = (() => {
   return { show, hide };
 })();
 
-function setSubmitLoading(form, loading) {
+function setSubmitLoading(form, loading, label = 'Submitting...') {
   const button = form?.querySelector('button[type="submit"]');
   if (!button) return;
   if (loading) {
     button.dataset.originalContent = button.innerHTML;
-    button.innerHTML = '<span class="submit-spinner" aria-hidden="true"></span><span>Submitting...</span>';
+    button.innerHTML = `<span class="submit-spinner" aria-hidden="true"></span><span>${label}</span>`;
     button.disabled = true;
     button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
   } else {
     button.innerHTML = button.dataset.originalContent || button.innerHTML;
     button.disabled = false;
     button.classList.remove('is-loading');
+    button.removeAttribute('aria-busy');
   }
 }
 
@@ -146,6 +148,7 @@ const state = {
   franchise: null,
   drivers: [],
   tricycles: [],
+  franchiseOwnerTricycles: [],
   notifications: [],
   renewals: [],
   activeNav: 'franchise',
@@ -161,6 +164,7 @@ let localFranchiseSubmission = sessionStorage.getItem('franchiseRegistrationPend
 
 let editingTricycleId = null;
 let editingDriverId = null;
+let currentVehiclePhotoTarget = null;
 let pendingStatusAction = null;
 let statusActionBusy = false;
 
@@ -199,20 +203,41 @@ function setSignupError(message) {
   errorBox.style.display = message ? 'flex' : 'none';
 }
 
+function setPasswordResetStatus(message, success = false) {
+  const status = document.getElementById('login-reset-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('show', Boolean(message));
+  status.classList.toggle('success', success);
+}
+
 function setAuthMode(mode) {
   const loginForm = document.getElementById('login-form');
   const signupForm = document.getElementById('signup-form');
+  const resetRequestForm = document.getElementById('password-reset-request-form');
   const switchText = document.getElementById('auth-switch-text');
   const switchBtn = document.getElementById('auth-switch-btn');
+  const switchRow = document.getElementById('auth-switch-row');
+  const welcomeHeading = document.getElementById('login-welcome-heading');
+  const headingTitle = document.getElementById('login-heading-title');
+  const headingDescription = document.getElementById('login-heading-description');
   if (!loginForm || !signupForm) return;
 
   const isSignup = mode === 'signup';
   loginForm.classList.toggle('rider-hidden', isSignup);
   signupForm.classList.toggle('rider-hidden', !isSignup);
+  resetRequestForm?.classList.add('rider-hidden');
+  switchRow?.classList.remove('rider-hidden');
+  welcomeHeading?.classList.remove('rider-hidden');
   if (switchText) switchText.textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
   if (switchBtn) switchBtn.textContent = isSignup ? 'Sign In' : 'Sign Up';
+  if (headingTitle) headingTitle.textContent = isSignup ? 'Create your account' : 'Welcome Back!';
+  if (headingDescription) headingDescription.textContent = isSignup
+    ? 'Get started managing your franchise and units.'
+    : 'Please sign in to continue to your account.';
   setLoginError('');
   setSignupError('');
+  setPasswordResetStatus('');
 }
 
 function setAppVisible(visible) {
@@ -245,7 +270,16 @@ function bindAccordionToggles() {
   document.querySelectorAll('[data-acc-toggle]').forEach((button) => {
     button.addEventListener('click', () => {
       const accordion = button.closest('[data-acc]');
-      if (accordion) accordion.classList.toggle('is-open');
+      if (!accordion) return;
+      const isOpen = accordion.classList.toggle('is-open');
+      const content = accordion.querySelector('.acc-content');
+      if (content) {
+        if (isOpen) {
+          content.style.setProperty('--acc-content-height', `${content.scrollHeight}px`);
+        } else {
+          content.style.removeProperty('--acc-content-height');
+        }
+      }
     });
   });
 }
@@ -293,6 +327,18 @@ function readFileAsDataUrl(file) {
     reader.onerror = () => reject(new Error('Unable to read uploaded file.'));
     reader.readAsDataURL(file);
   });
+}
+
+async function readOptionalVehicleImage(inputId) {
+  const file = document.getElementById(inputId)?.files?.[0];
+  if (!file) return '';
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+    throw new Error('Choose a JPEG, PNG, GIF, or WebP vehicle image.');
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('The vehicle image must be 5 MB or smaller.');
+  }
+  return readFileAsDataUrl(file);
 }
 
 async function requestJson(url, options = {}) {
@@ -512,53 +558,157 @@ function buildTricycleListItem(tricycle) {
     </div>
   `;
   card.addEventListener('click', () => {
-    const detail = document.getElementById('detail-tricycle');
-    if (!detail) return;
-    document.getElementById('td-unit-no').textContent = tricycle.unit || 'Not specified';
-    document.getElementById('td-plate-sub').textContent = tricycle.plate || 'No plate';
-    document.getElementById('td-vehicle-fields').innerHTML = `
-      <div class="field-row"><span>Body Number / Sticker</span><strong>${tricycle.unit || '—'}</strong></div>
-      <div class="field-row"><span>Brand</span><strong>${tricycle.brand || 'Not specified'}</strong></div>
-      <div class="field-row"><span>Plate No.</span><strong>${tricycle.plate || '—'}</strong></div>
-      <div class="field-row"><span>Engine No.</span><strong>${tricycle.engine || '—'}</strong></div>
-      <div class="field-row"><span>Chassis No.</span><strong>${tricycle.chassis || '—'}</strong></div>
-      <div class="field-row"><span>Color</span><strong>${tricycle.color || '—'}</strong></div>
-    `;
-    const documents = tricycle.docs || [];
-    document.getElementById('td-documents').innerHTML = documents.length
-      ? documents.map((document) => {
-          const isPdf = /\.pdf$/i.test(document.url || '');
-          return isPdf
-            ? `<a class="doc-item" href="${document.url}" target="_blank" rel="noopener" aria-label="Open ${document.name}"></a>`
-            : `<button type="button" class="doc-item" aria-label="View ${document.name}"><img src="${document.url}" alt="${document.name}"></button>`;
-        }).join('')
-      : '<div class="empty-doc">No documents uploaded yet.</div>';
-    document.querySelectorAll('#td-documents img').forEach((image) => {
-      image.closest('.doc-item')?.addEventListener('click', () => openDocumentViewer(image.src, image.alt));
-    });
-    const editButton = document.getElementById('td-more');
-    editButton.style.display = 'inline-flex';
-    editButton.dataset.tricycleId = tricycle.id;
-    const removeButton = document.getElementById('td-remove-btn');
-    if (removeButton) {
-      const status = normalizeStatus(tricycle.status).toLowerCase();
-      removeButton.style.display = status === 'pending' ? 'none' : 'inline-flex';
-      removeButton.dataset.tricycleId = tricycle.id;
-    }
-    const statusButton = document.getElementById('td-status-btn');
-    if (statusButton) {
-      const status = normalizeStatus(tricycle.status).toLowerCase();
-      statusButton.style.display = 'inline-flex';
-      statusButton.disabled = false;
-      statusButton.textContent = status === 'pending' ? 'Cancel Submission' : status === 'inactive' ? 'Set Active' : 'Set Inactive';
-      statusButton.className = `btn ${status === 'inactive' ? 'primary' : 'danger'}`;
-      statusButton.dataset.statusType = 'tricycle';
-      statusButton.dataset.statusId = tricycle.id;
-      statusButton.dataset.currentStatus = status;
-    }
-    detail.classList.add('active');
+    openTricycleDetails(tricycle);
   });
   return card;
+}
+
+function openTricycleDetails(tricycle, isOwnerTricycle = false) {
+  const detail = document.getElementById('detail-tricycle');
+  if (!detail) return;
+  currentVehiclePhotoTarget = { id: tricycle.id, type: isOwnerTricycle ? 'owner_tricycle' : 'tricycle' };
+  document.getElementById('td-unit-no').textContent = tricycle.unit || 'Not specified';
+  document.getElementById('td-plate-sub').textContent = tricycle.plate || 'No plate';
+  renderVehiclePhoto(tricycle.image || '');
+  document.getElementById('td-vehicle-fields').innerHTML = `
+    <div class="field-row"><span>Body Number / Sticker</span><strong>${tricycle.unit || '—'}</strong></div>
+    <div class="field-row"><span>Brand</span><strong>${tricycle.brand || 'Not specified'}</strong></div>
+    <div class="field-row"><span>Plate No.</span><strong>${tricycle.plate || '—'}</strong></div>
+    <div class="field-row"><span>Engine No.</span><strong>${tricycle.engine || '—'}</strong></div>
+    <div class="field-row"><span>Chassis No.</span><strong>${tricycle.chassis || '—'}</strong></div>
+    <div class="field-row"><span>Color</span><strong>${tricycle.color || '—'}</strong></div>
+    <div class="field-row"><span>Official Receipt No.</span><strong>${tricycle.orNumber || '—'}</strong></div>
+  `;
+  const documentsContainer = document.getElementById('td-documents');
+  documentsContainer.replaceChildren();
+  if (tricycle.docs && tricycle.docs.length) {
+    tricycle.docs.forEach((doc) => {
+      const isPdf = /\.pdf$/i.test(doc.url || '');
+      const item = document.createElement(isPdf ? 'a' : 'button');
+      item.className = 'driver-doc-item';
+      item.setAttribute('aria-label', `${isPdf ? 'Open' : 'View'} ${doc.name || 'document'}`);
+      if (isPdf) {
+        item.href = doc.url;
+        item.target = '_blank';
+        item.rel = 'noopener';
+      } else {
+        item.type = 'button';
+      }
+
+      const preview = document.createElement('span');
+      preview.className = 'driver-doc-preview';
+      if (isPdf) {
+        preview.innerHTML = '<svg class="driver-doc-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>';
+      } else {
+        const image = document.createElement('img');
+        image.src = doc.url;
+        image.alt = '';
+        preview.appendChild(image);
+        item.addEventListener('click', () => openDocumentViewer(doc.url, doc.name || 'Document'));
+      }
+      item.appendChild(preview);
+
+      const name = document.createElement('span');
+      name.className = 'driver-doc-name';
+      name.textContent = doc.name || 'Document';
+      item.appendChild(name);
+      documentsContainer.appendChild(item);
+    });
+  } else {
+    documentsContainer.innerHTML = '<div class="empty-doc">No documents uploaded yet.</div>';
+  }
+
+  const status = normalizeStatus(tricycle.status).toLowerCase();
+  const editButton = document.getElementById('td-more');
+  if (editButton) {
+    editButton.style.display = isOwnerTricycle ? 'none' : 'inline-flex';
+    editButton.dataset.tricycleId = tricycle.id;
+  }
+  const removeButton = document.getElementById('td-remove-btn');
+  if (removeButton) {
+    removeButton.style.display = isOwnerTricycle || status !== 'pending' ? 'inline-flex' : 'none';
+    removeButton.textContent = isOwnerTricycle ? 'Delete My Unit' : 'Remove';
+    removeButton.dataset.tricycleId = tricycle.id;
+    removeButton.dataset.recordType = isOwnerTricycle ? 'owner_tricycle' : 'tricycle';
+  }
+  const statusButton = document.getElementById('td-status-btn');
+  if (statusButton) {
+    statusButton.style.display = isOwnerTricycle ? (status === 'pending' ? 'none' : 'inline-flex') : 'inline-flex';
+    statusButton.disabled = false;
+    statusButton.textContent = isOwnerTricycle
+      ? (status === 'inactive' ? 'Re-enable Unit' : 'Disable Unit')
+      : status === 'pending' ? 'Cancel Submission' : status === 'inactive' ? 'Set Active' : 'Set Inactive';
+    statusButton.className = `btn ${status === 'inactive' ? 'primary' : 'danger'}`;
+    statusButton.dataset.statusType = isOwnerTricycle ? 'owner_tricycle' : 'tricycle';
+    statusButton.dataset.statusId = tricycle.id;
+    statusButton.dataset.currentStatus = status;
+  }
+  detail.classList.add('active');
+}
+
+function renderVehiclePhoto(imageUrl) {
+  const button = document.getElementById('td-photo-view');
+  const resetButton = document.getElementById('td-photo-reset');
+  if (!button || !resetButton) return;
+  button.replaceChildren();
+  if (imageUrl) {
+    const image = document.createElement('img');
+    image.src = imageUrl;
+    image.alt = 'Custom tricycle image';
+    button.appendChild(image);
+    button.setAttribute('aria-label', 'View tricycle image');
+    resetButton.classList.remove('rider-hidden');
+    return;
+  }
+  button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"/><path d="M14 7v5h5"/></svg>';
+  button.setAttribute('aria-label', 'Upload a tricycle image');
+  resetButton.classList.add('rider-hidden');
+}
+
+async function uploadVehicleImage(file) {
+  if (!currentVehiclePhotoTarget) return;
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+    showToast('Choose a JPEG, PNG, GIF, or WebP image.', 'error');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('The tricycle image must be 5 MB or smaller.', 'error');
+    return;
+  }
+  try {
+    const result = await requestJson(riderApi, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'update-vehicle-image',
+        ...currentVehiclePhotoTarget,
+        vehicleImageData: await readFileAsDataUrl(file)
+      })
+    });
+    const collection = currentVehiclePhotoTarget.type === 'owner_tricycle' ? state.franchiseOwnerTricycles : state.tricycles;
+    const vehicle = collection.find((item) => String(item.id) === String(currentVehiclePhotoTarget.id));
+    if (vehicle) vehicle.image = result.image || '';
+    renderVehiclePhoto(result.image || '');
+    showToast('Tricycle image updated.');
+  } catch (error) {
+    showToast(error.message || 'Unable to upload tricycle image.', 'error');
+  }
+}
+
+async function resetVehicleImage() {
+  if (!currentVehiclePhotoTarget) return;
+  try {
+    await requestJson(riderApi, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'update-vehicle-image', ...currentVehiclePhotoTarget, removeImage: true })
+    });
+    const collection = currentVehiclePhotoTarget.type === 'owner_tricycle' ? state.franchiseOwnerTricycles : state.tricycles;
+    const vehicle = collection.find((item) => String(item.id) === String(currentVehiclePhotoTarget.id));
+    if (vehicle) vehicle.image = '';
+    renderVehiclePhoto('');
+    showToast('Default tricycle icon restored.');
+  } catch (error) {
+    showToast(error.message || 'Unable to restore the default tricycle icon.', 'error');
+  }
 }
 
 function buildDriverListItem(driver) {
@@ -607,17 +757,44 @@ function buildDriverListItem(driver) {
       <div class="field-row"><span>Status</span><strong>${normalizeStatus(driver.status)}</strong></div>
       <div class="field-row"><span>Assigned Tricycle</span><strong>${driver.tricycle || 'Unassigned'}</strong></div>
     `;
-    document.getElementById('dd-documents').innerHTML = (driver.docs && driver.docs.length)
-      ? driver.docs.map((doc) => {
-          const isPdf = /\.pdf$/i.test(doc.url || '');
-          return isPdf
-            ? `<a class="doc-item" href="${doc.url}" target="_blank" rel="noopener" aria-label="Open ${doc.name}">${doc.name}</a>`
-            : `<button type="button" class="doc-item" aria-label="View ${doc.name}"><img src="${doc.url}" alt="${doc.name}"></button>`;
-        }).join('')
-      : '<div class="empty-doc">No documents uploaded yet.</div>';
-    document.querySelectorAll('#dd-documents img').forEach((image) => {
-      image.closest('.doc-item')?.addEventListener('click', () => openDocumentViewer(image.src, image.alt));
-    });
+    const documentsContainer = document.getElementById('dd-documents');
+    documentsContainer.replaceChildren();
+    if (driver.docs && driver.docs.length) {
+      driver.docs.forEach((doc) => {
+        const isPdf = /\.pdf$/i.test(doc.url || '');
+        const item = document.createElement(isPdf ? 'a' : 'button');
+        item.className = 'driver-doc-item';
+        item.setAttribute('aria-label', `${isPdf ? 'Open' : 'View'} ${doc.name || 'document'}`);
+        if (isPdf) {
+          item.href = doc.url;
+          item.target = '_blank';
+          item.rel = 'noopener';
+        } else {
+          item.type = 'button';
+        }
+
+        const preview = document.createElement('span');
+        preview.className = 'driver-doc-preview';
+        if (isPdf) {
+          preview.innerHTML = '<svg class="driver-doc-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>';
+        } else {
+          const image = document.createElement('img');
+          image.src = doc.url;
+          image.alt = '';
+          preview.appendChild(image);
+          item.addEventListener('click', () => openDocumentViewer(doc.url, doc.name || 'Document'));
+        }
+        item.appendChild(preview);
+
+        const name = document.createElement('span');
+        name.className = 'driver-doc-name';
+        name.textContent = doc.name || 'Document';
+        item.appendChild(name);
+        documentsContainer.appendChild(item);
+      });
+    } else {
+      documentsContainer.innerHTML = '<div class="empty-doc">No documents uploaded yet.</div>';
+    }
     const editButton = document.getElementById('dd-edit-btn');
     editButton.style.display = 'inline-flex';
     editButton.dataset.driverId = driver.id;
@@ -646,11 +823,16 @@ function buildDriverListItem(driver) {
         return normalizeStatus(tricycle.status).toLowerCase() === 'active' && !state.drivers.some((item) => item.tricycleId === tricycle.id);
       });
       tricycleSelect.innerHTML = '<option value="">Select tricycle</option>' + availableTricycles.map((tricycle) => `<option value="${tricycle.id}">${tricycle.brand || 'Tricycle'} - ${tricycle.unit || tricycle.plate || `Unit ${tricycle.id}`}</option>`).join('');
-      tricycleSelect.style.display = canAssign && availableTricycles.length ? 'inline-flex' : 'none';
+      tricycleSelect.value = '';
       assignButton.style.display = canAssign && availableTricycles.length ? 'inline-flex' : 'none';
       assignButton.dataset.driverId = driver.id;
-      assignButton.onclick = () => assignDriver(driver.id, tricycleSelect.value);
+      assignButton.onclick = () => {
+        closeDriverActionsMenu();
+        document.getElementById('assign-tricycle-overlay')?.classList.add('active');
+        tricycleSelect.focus();
+      };
     }
+    closeDriverActionsMenu();
     detail.classList.add('active');
   });
   return card;
@@ -670,6 +852,61 @@ function renderTricycles() {
 
   list.innerHTML = '';
   filtered.forEach((tricycle) => list.appendChild(buildTricycleListItem(tricycle)));
+}
+
+function renderFranchiseOwnerTricycles() {
+  const list = document.getElementById('owner-tricycle-list');
+  const emptyState = document.getElementById('owner-tricycle-empty');
+  const unavailableState = document.getElementById('owner-tricycle-unavailable');
+  const addButton = document.getElementById('btn-add-owner-tricycle');
+  if (!list || !emptyState || !unavailableState || !addButton) return;
+
+  const hasFranchise = Boolean(state.franchise?.registered);
+  addButton.classList.toggle('rider-hidden', !hasFranchise);
+  list.classList.toggle('rider-hidden', !hasFranchise);
+  emptyState.classList.toggle('rider-hidden', !hasFranchise || state.franchiseOwnerTricycles.length > 0);
+  unavailableState.classList.toggle('rider-hidden', hasFranchise);
+  list.replaceChildren();
+
+  state.franchiseOwnerTricycles.forEach((tricycle) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card';
+    card.setAttribute('aria-label', `View ${tricycle.brand || 'tricycle'} details`);
+    const icon = document.createElement('div');
+    icon.className = 'card-icon gold';
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="2"></circle><circle cx="17" cy="17" r="2"></circle><path d="M5 17H3v-5l2-5h9l3 5h2a2 2 0 0 1 2 2v3h-2"></path><path d="M14 7v5h5"></path></svg>';
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    const titleRow = document.createElement('div');
+    titleRow.className = 'card-title-row';
+    const title = document.createElement('span');
+    title.className = 'card-title';
+    title.textContent = tricycle.brand || 'Tricycle';
+    const status = document.createElement('span');
+    status.className = `badge ${statBadgeClass(tricycle.status)}`;
+    status.textContent = normalizeStatus(tricycle.status);
+    titleRow.append(title, status);
+    const details = document.createElement('div');
+    details.className = 'card-sub';
+    [tricycle.unit || 'No sticker number', tricycle.plate || 'No plate'].forEach((value, index) => {
+      if (index > 0) {
+        const separator = document.createElement('span');
+        separator.className = 'dot';
+        details.appendChild(separator);
+      }
+      const item = document.createElement('span');
+      item.textContent = value;
+      details.appendChild(item);
+    });
+    body.append(titleRow, details);
+    const chevron = document.createElement('div');
+    chevron.className = 'card-chevron';
+    chevron.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"></path></svg>';
+    card.append(icon, body, chevron);
+    card.addEventListener('click', () => openTricycleDetails(tricycle, true));
+    list.appendChild(card);
+  });
 }
 
 function renderDrivers() {
@@ -693,17 +930,26 @@ async function assignDriver(driverId, tricycleId) {
     showToast('Please select an available tricycle first.', 'error');
     return;
   }
+
   try {
     await requestJson(riderApi, {
       method: 'POST',
       body: JSON.stringify({ action: 'assign-driver', driver_id: driverId, tricycle_id: tricycleId })
     });
+    document.getElementById('assign-tricycle-overlay')?.classList.remove('active');
     showToast('Tricycle assigned successfully.');
     document.querySelector('[data-close="detail-driver"]')?.click();
     await refreshDashboard();
   } catch (error) {
     showToast(error.message || 'Unable to assign tricycle.', 'error');
   }
+}
+
+function closeDriverActionsMenu() {
+  const menu = document.getElementById('dd-actions-menu');
+  const toggle = document.getElementById('dd-actions-toggle');
+  menu?.classList.remove('is-open');
+  toggle?.setAttribute('aria-expanded', 'false');
 }
 
 async function cancelSubmission(type, id, confirmed = false) {
@@ -723,9 +969,11 @@ async function updateOwnedStatus(type, id, status) {
   const label = type === 'driver' ? 'driver' : 'tricycle';
   try {
     await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'update-status', type, id, status }) });
-    showToast(`${label[0].toUpperCase() + label.slice(1)} set to ${status.toLowerCase()}.`);
-    document.querySelector(`[data-close="detail-${type}"]`)?.click();
-    await refreshDashboard();
+    showToast(type === 'owner_tricycle'
+      ? status === 'Active' ? 'Your tricycle has been re-enabled. Super Admins have been notified.' : 'Your tricycle has been disabled. Super Admins have been notified.'
+      : `${label[0].toUpperCase() + label.slice(1)} set to ${status.toLowerCase()}.`);
+    document.querySelector(`[data-close="detail-${type === 'owner_tricycle' ? 'tricycle' : type}"]`)?.click();
+    await refreshDashboard(type !== 'owner_tricycle');
   } catch (error) {
     showToast(error.message || `Unable to update ${label} status.`, 'error');
   }
@@ -735,9 +983,11 @@ async function removeOwnedRecord(type, id) {
   const label = type === 'driver' ? 'driver' : 'tricycle';
   try {
     await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'remove-record', type, id }) });
-    showToast(`${label[0].toUpperCase() + label.slice(1)} removed successfully.`);
-    document.querySelector(`[data-close="detail-${type}"]`)?.click();
-    await refreshDashboard();
+    showToast(type === 'owner_tricycle'
+      ? 'Your tricycle was archived. Super Admins have been notified.'
+      : `${label[0].toUpperCase() + label.slice(1)} removed successfully.`);
+    document.querySelector(`[data-close="detail-${type === 'owner_tricycle' ? 'tricycle' : type}"]`)?.click();
+    await refreshDashboard(type !== 'owner_tricycle');
   } catch (error) {
     showToast(error.message || `Unable to remove ${label}.`, 'error');
   }
@@ -756,14 +1006,20 @@ function openStatusConfirmation(type, id, currentStatus) {
   const confirmButton = document.getElementById('confirm-ok');
   if (!overlay || !title || !description || !confirmButton) return;
 
-  const label = type === 'driver' ? 'driver' : 'tricycle';
+  const label = type === 'driver' ? 'driver' : type === 'owner_tricycle' ? 'unit' : 'tricycle';
   const nextStatus = currentStatus === 'inactive' ? 'Active' : 'Inactive';
   pendingStatusAction = { kind: 'status', type, id, currentStatus };
-  title.textContent = currentStatus === 'pending' ? `Cancel ${label} submission?` : `Set ${label} ${nextStatus.toLowerCase()}?`;
+  title.textContent = type === 'owner_tricycle'
+    ? currentStatus === 'inactive' ? 'Re-enable this unit?' : 'Disable this unit?'
+    : currentStatus === 'pending' ? `Cancel ${label} submission?` : `Set ${label} ${nextStatus.toLowerCase()}?`;
   description.textContent = currentStatus === 'pending'
     ? `This will cancel the pending ${label} submission.`
-    : `This will set this ${label} to ${nextStatus.toLowerCase()}.`;
-  confirmButton.textContent = currentStatus === 'pending' ? 'Cancel Submission' : `Set ${nextStatus}`;
+    : type === 'owner_tricycle'
+      ? `This will ${currentStatus === 'inactive' ? 're-enable' : 'disable'} your unit and notify all active Super Admins by email and in-app notification.`
+      : `This will set this ${label} to ${nextStatus.toLowerCase()}.`;
+  confirmButton.textContent = type === 'owner_tricycle'
+    ? currentStatus === 'inactive' ? 'Re-enable Unit' : 'Disable Unit'
+    : currentStatus === 'pending' ? 'Cancel Submission' : `Set ${nextStatus}`;
   overlay.classList.add('active');
 }
 
@@ -775,11 +1031,13 @@ function openRemoveConfirmation(type, id) {
   const confirmButton = document.getElementById('confirm-ok');
   if (!overlay || !title || !description || !confirmButton) return;
 
-  const label = type === 'driver' ? 'driver' : 'tricycle';
+  const label = type === 'driver' ? 'driver' : type === 'owner_tricycle' ? 'unit' : 'tricycle';
   pendingStatusAction = { kind: 'remove', type, id };
-  title.textContent = `Remove ${label}?`;
-  description.textContent = `This will permanently remove this ${label} from your franchise and notify the LGU. This cannot be undone.`;
-  confirmButton.textContent = 'Remove';
+  title.textContent = type === 'owner_tricycle' ? 'Delete this unit?' : `Remove ${label}?`;
+  description.textContent = type === 'owner_tricycle'
+    ? 'This will archive the unit so it no longer appears in My Units. The record will be retained, and all active Super Admins will be notified by email and in-app notification.'
+    : `This will permanently remove this ${label} from your franchise and notify the LGU. This cannot be undone.`;
+  confirmButton.textContent = type === 'owner_tricycle' ? 'Archive Unit' : 'Remove';
   overlay.classList.add('active');
 }
 
@@ -799,7 +1057,7 @@ async function handleStatusConfirmation() {
 
   statusActionBusy = true;
   if (action.kind === 'remove') {
-    setButtonLoading(confirmButton, true, 'Removing...');
+    setButtonLoading(confirmButton, true, action.type === 'owner_tricycle' ? 'Archiving...' : 'Removing...');
     try {
       await removeOwnedRecord(action.type, action.id);
     } finally {
@@ -899,12 +1157,13 @@ function renderRenewals() {
 
   const currentYear = new Date().getFullYear();
   const expiryYear = state.franchise?.expiry ? new Date(`${state.franchise.expiry}T00:00:00`).getFullYear() : 0;
-  const renewalYear = expiryYear > 0 ? expiryYear - 1 : currentYear;
+  const renewalYear = expiryYear > 0 ? expiryYear : currentYear;
   const currentYearRenewal = renewals.find((renewal) => Number(renewal.year) === renewalYear);
   const currentYearStatus = normalizeStatus(currentYearRenewal?.status || '').toLowerCase();
   const hasCurrentYearRenewal = Boolean(currentYearRenewal);
   const hasRegisteredFranchise = Boolean(state.franchise?.registered);
-  const renewalOpeningDate = new Date(`${renewalYear}-01-01T00:00:00`);
+  const renewalOpeningDate = state.franchise?.expiry ? new Date(`${state.franchise.expiry}T00:00:00`) : new Date();
+  renewalOpeningDate.setDate(renewalOpeningDate.getDate() - 20);
   const renewalWindowOpen = new Date() >= renewalOpeningDate;
   const currentYearProcessing = hasCurrentYearRenewal && !currentYearStatus.includes('confirm') && !currentYearStatus.includes('approv') && !currentYearStatus.includes('reject') && !currentYearStatus.includes('fail') && !currentYearStatus.includes('declin');
   const currentYearSuccessful = hasCurrentYearRenewal && (currentYearStatus.includes('confirm') || currentYearStatus.includes('approv'));
@@ -933,8 +1192,8 @@ function renderRenewals() {
       : hasCurrentYearRenewal
         ? `A ${renewalYear} renewal application has already been processed. Only one renewal may be submitted each year.`
         : !renewalWindowOpen
-          ? `Franchise currently active. Renewal applications open on January 1, ${renewalYear}.`
-          : `Franchise currently active. Renewal applications are accepted from January through December of ${renewalYear}.`;
+          ? `Franchise currently active. Renewal applications open on ${formatDate(renewalOpeningDate)}.`
+          : `Franchise currently active. Your renewal is due on ${expiryText}.`;
   }
   if (renewalForm) {
     const canSubmit = !hasCurrentYearRenewal && hasRegisteredFranchise && renewalWindowOpen;
@@ -944,6 +1203,8 @@ function renderRenewals() {
   if (!container || !emptyState || !historyWrap) return;
 
   if (!renewals.length) {
+    historyWrap.hidden = true;
+    emptyState.hidden = false;
     historyWrap.style.display = 'none';
     emptyState.style.display = 'block';
     emptyState.innerHTML = '<p>No renewal has been submitted yet.</p>';
@@ -951,36 +1212,40 @@ function renderRenewals() {
   }
 
   emptyState.style.display = 'none';
+  historyWrap.hidden = false;
+  emptyState.hidden = true;
   historyWrap.style.display = 'block';
   container.innerHTML = renewals.map((renewal) => {
     const status = normalizeStatus(renewal.status || 'Submitted');
+    const successful = /confirm|approv/i.test(status);
+    const expiry = renewal.nextRenewalDate;
+    const expired = expiry && new Date(expiry + 'T23:59:59') < new Date();
+    const label = successful ? (expired ? 'Expired' : 'Active') : status;
+    const tone = successful ? (expired ? 'expired' : 'active') : statBadgeClass(status);
     const timelineEntries = getRenewalTimelineEntries(renewal);
     return `
-      <article class="renewal-history-card">
-        <div class="renewal-history-heading">
-          <div>
-            <div class="renewal-history-label">Renewal for</div>
-            <h3>Year ${renewal.year || '—'}</h3>
-          </div>
-          <span class="badge ${statBadgeClass(status)}">${status}</span>
-        </div>
-        <div class="renewal-timeline">
-          ${timelineEntries.map((step) => `
-            <div class="timeline-item ${step.tone}">
-              <div class="timeline-node" aria-hidden="true"></div>
-              <div class="timeline-content">
-                <div class="timeline-top">
-                  <span class="timeline-title">${step.title}</span>
-                  <span class="timeline-badge ${step.tone}">${step.label}</span>
+      <details class="renewal-record">
+        <summary class="renewal-record-summary">
+          <span class="renewal-record-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></span>
+          <span class="renewal-record-copy"><span class="renewal-record-title">Franchise Renewal · ${renewal.year || '—'}</span><span class="renewal-record-date">${successful ? 'Valid until' : 'Proposed valid until'}: ${formatDate(expiry)}</span></span>
+          <span class="badge ${tone}">${label}</span>
+          <svg class="renewal-record-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+        </summary>
+        <div class="renewal-record-detail">
+          <h3>Renewal timeline</h3>
+          <div class="renewal-timeline">
+            ${timelineEntries.map((step) => `
+              <div class="timeline-item ${step.tone}">
+                <div class="timeline-node" aria-hidden="true"></div>
+                <div class="timeline-content">
+                  <div class="timeline-top"><span class="timeline-title">${step.title}</span><span class="timeline-badge ${step.tone}">${step.label}</span></div>
+                  <div class="timeline-date">${formatDate(step.date)}</div>
+                  <div class="timeline-detail">${step.detail}</div>
                 </div>
-                <div class="timeline-date">${formatDate(step.date)}</div>
-                <div class="timeline-detail">${step.detail}</div>
-              </div>
-            </div>
-          `).join('')}
+              </div>`).join('')}
+          </div>
         </div>
-      </article>
-    `;
+      </details>`;
   }).join('');
 }
 
@@ -991,12 +1256,88 @@ function hydrateProfile() {
   const email = profile.email || '';
   const avatar = document.querySelector('.profile-avatar');
 
-  if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+  if (avatar) {
+    avatar.replaceChildren();
+    if (profile.photoUrl) {
+      const image = document.createElement('img');
+      image.src = profile.photoUrl;
+      image.alt = 'Your profile picture';
+      image.addEventListener('error', () => { avatar.textContent = name.charAt(0).toUpperCase(); }, { once: true });
+      avatar.appendChild(image);
+    } else avatar.textContent = name.charAt(0).toUpperCase();
+  }
+  const photoButton = document.getElementById('profile-photo-button');
+  if (photoButton) photoButton.hidden = false;
+  const uploadButton = document.getElementById('profile-photo-upload');
+  if (uploadButton) {
+    uploadButton.hidden = true;
+    uploadButton.textContent = profile.photoUrl ? 'Change profile photo' : 'Upload profile photo';
+  }
+  const photoHint = document.getElementById('profile-photo-hint');
+  if (photoHint) photoHint.hidden = false;
   document.getElementById('profile-display-name').textContent = name;
   document.getElementById('profile-display-role').textContent = role;
-  document.getElementById('as-name').value = name;
+  document.getElementById('as-name').value = profile.baseName || name;
+  document.getElementById('as-middle-name').value = profile.middleName || '';
+  document.getElementById('as-role').value = role;
+  document.getElementById('as-franchise').value = profile.franchise || (role === 'Rider' ? 'Not registered' : 'Not assigned');
   document.getElementById('as-email').value = email;
-  document.getElementById('as-contact').value = profile.contact || '';
+  const contactInput = document.getElementById('as-contact');
+  contactInput.value = profile.contact || '';
+  contactInput.readOnly = role !== 'Rider';
+  const profileDetails = {
+    name: profile.baseName || name,
+    middle: profile.middleName || '—',
+    role,
+    franchise: document.getElementById('as-franchise').value,
+    email: email || 'Not provided',
+    contact: profile.contact || 'Not provided',
+  };
+  Object.entries(profileDetails).forEach(([key, value]) => {
+    const element = document.getElementById(`profile-info-${key}`);
+    if (element) element.textContent = value;
+  });
+  renderAccountDocuments();
+}
+
+function renderAccountDocuments() {
+  const preview = document.getElementById('as-document-preview');
+  if (!preview) return;
+
+  const documents = Array.isArray(state.franchise?.documents) ? state.franchise.documents : [];
+  preview.replaceChildren();
+  if (!documents.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Application receipt, Cedula, and driver’s license documents will appear here when available.';
+    preview.appendChild(empty);
+    return;
+  }
+
+  documents.forEach((documentItem) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'account-document-card';
+    card.setAttribute('aria-label', `View ${documentItem.name}`);
+
+    const image = document.createElement('img');
+    image.className = 'account-document-image';
+    image.src = documentItem.url;
+    image.alt = documentItem.name;
+
+    const caption = document.createElement('span');
+    caption.className = 'account-document-caption';
+    const title = document.createElement('span');
+    title.className = 'account-document-title';
+    title.textContent = documentItem.name;
+    const action = document.createElement('span');
+    action.className = 'account-document-action';
+    action.textContent = 'Tap to view';
+    caption.append(title, action);
+    card.append(image, caption);
+    card.addEventListener('click', () => openDocumentViewer(documentItem.url, documentItem.name));
+    preview.appendChild(card);
+  });
 }
 
 async function handleApplyRenewal(evt) {
@@ -1040,7 +1381,7 @@ async function handleApplyRenewal(evt) {
   }
 }
 
-async function refreshDashboard(resetNavigation = true) {
+async function refreshDashboard(resetNavigation = true, showApp = true) {
   try {
     const result = await requestJson(riderApi, { method: 'GET' });
     state.lastRefreshError = null;
@@ -1051,6 +1392,7 @@ async function refreshDashboard(resetNavigation = true) {
     }
     state.drivers = result.drivers || [];
     state.tricycles = result.tricycles || [];
+    state.franchiseOwnerTricycles = result.franchiseOwnerTricycles || [];
     state.notifications = result.notifications || [];
     state.renewals = result.renewals || [];
     populateActiveDriverOptions();
@@ -1058,11 +1400,12 @@ async function refreshDashboard(resetNavigation = true) {
 
     renderFranchiseSummary();
     renderTricycles();
+    renderFranchiseOwnerTricycles();
     renderDrivers();
     renderNotifications();
     renderRenewals();
     hydrateProfile();
-    setAppVisible(true);
+    if (showApp) setAppVisible(true);
     if (resetNavigation) setActiveNav('franchise');
     return true;
   } catch (error) {
@@ -1085,7 +1428,7 @@ async function handleLogin(evt) {
     setLoginError('Please enter both your email/username and password.');
     return;
   }
-  setSubmitLoading(form, true);
+  setSubmitLoading(form, true, 'Signing in...');
 
   try {
     const response = await requestJson(loginApi, {
@@ -1094,18 +1437,52 @@ async function handleLogin(evt) {
     });
 
     setLoginError('');
-    const dashboardLoaded = await refreshDashboard();
+    const dashboardLoaded = await refreshDashboard(true, false);
     if (!dashboardLoaded) {
       const detail = state.lastRefreshError?.message || 'The dashboard request was rejected.';
       setLoginError(`Unable to load your account: ${detail}`);
       return;
     }
+    const progress = document.getElementById('login-progress');
+    const progressMessage = progress?.querySelector('.login-progress-message');
+    if (progressMessage) progressMessage.textContent = `Login successful. Welcome, ${response.name || 'Rider'}!`;
+    progress?.classList.remove('rider-hidden');
+    progress?.setAttribute('aria-hidden', 'false');
+    await new Promise(resolve => window.setTimeout(resolve, 3000));
+    progress?.classList.add('rider-hidden');
+    progress?.setAttribute('aria-hidden', 'true');
+    setAppVisible(true);
     showToast(`${response.name || 'Welcome'} logged in successfully.`);
   } catch (error) {
     setAppVisible(false);
     setLoginError(error.message || 'Unable to log in.');
   } finally {
     setSubmitLoading(form, false);
+  }
+}
+
+async function handlePasswordResetRequest(evt) {
+  evt.preventDefault();
+  const form = evt.currentTarget;
+  const emailInput = document.getElementById('reset-email');
+  const email = emailInput.value.trim();
+  if (!emailInput.checkValidity()) {
+    setPasswordResetStatus('Enter a valid email address.');
+    emailInput.focus();
+    return;
+  }
+
+  setButtonLoading(form.querySelector('button[type="submit"]'), true, 'Sending...');
+  try {
+    await requestJson(loginApi, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'request-password-reset', email })
+    });
+    setPasswordResetStatus('If an active account uses that email, a password reset link will be sent. Check your inbox.', true);
+  } catch (error) {
+    setPasswordResetStatus(error.message || 'Unable to request a password reset. Please try again.');
+  } finally {
+    setButtonLoading(form.querySelector('button[type="submit"]'), false);
   }
 }
 
@@ -1155,16 +1532,29 @@ async function handleCreateFranchise(evt) {
   const owner = document.getElementById('rf-owner').value.trim();
   const address = document.getElementById('rf-address').value.trim();
   const file = document.getElementById('rf-receipt').files[0];
+  const cedulaFile = document.getElementById('rf-cedula').files[0];
+  const driversLicense = document.getElementById('rf-drivers-license').value.trim();
+  const driversLicensePhoto = document.getElementById('rf-drivers-license-photo').files[0];
+  const driversLicenseBackPhoto = document.getElementById('rf-drivers-license-back-photo').files[0];
 
-  if (!name || !owner) {
+  if (!name || !owner || !file || !cedulaFile || !driversLicense || !driversLicensePhoto || !driversLicenseBackPhoto) {
     showToast('Please complete the franchise form fields.', 'error');
     return;
+  }
+  for (const [label, image] of [['Cedula', cedulaFile], ["Driver's license front", driversLicensePhoto], ["Driver's license back", driversLicenseBackPhoto]]) {
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(image.type) || image.size > 5 * 1024 * 1024) {
+      showToast(`${label} must be a JPEG, PNG, GIF, or WebP image no larger than 5 MB.`, 'error');
+      return;
+    }
   }
   setSubmitLoading(form, true);
   const loaderDone = TFMSLoader.show();
 
   try {
     const receiptDataUrl = await readFileAsDataUrl(file);
+    const cedulaDataUrl = await readFileAsDataUrl(cedulaFile);
+    const driversLicensePhotoDataUrl = await readFileAsDataUrl(driversLicensePhoto);
+    const driversLicenseBackPhotoDataUrl = await readFileAsDataUrl(driversLicenseBackPhoto);
     await requestJson(riderApi, {
       method: 'POST',
       body: JSON.stringify({
@@ -1172,7 +1562,11 @@ async function handleCreateFranchise(evt) {
         name,
         owner,
         address,
-        receiptDataUrl
+        receiptDataUrl,
+        cedulaDataUrl,
+        driversLicense,
+        driversLicensePhotoDataUrl,
+        driversLicenseBackPhotoDataUrl
       })
     });
 
@@ -1204,6 +1598,7 @@ async function handleCreateDriver(evt) {
   const address = document.getElementById('f-address').value.trim();
   const tricycleId = document.getElementById('f-tricycle').value || null;
   const fileInputLicense = document.getElementById('f-license');
+  const fileInputLicenseBack = document.getElementById('f-license-back');
   const fileInputOr = document.getElementById('f-or');
   const fileInputPresident = document.getElementById('f-president');
 
@@ -1227,6 +1622,7 @@ async function handleCreateDriver(evt) {
       address,
       tricycle_id: tricycleId,
       licenseData: await readFileAsDataUrl(fileInputLicense?.files?.[0] || null),
+      licenseBackData: await readFileAsDataUrl(fileInputLicenseBack?.files?.[0] || null),
       orcrData: await readFileAsDataUrl(fileInputOr?.files?.[0] || null),
       presidentsData: await readFileAsDataUrl(fileInputPresident?.files?.[0] || null)
     };
@@ -1246,6 +1642,7 @@ async function handleCreateDriver(evt) {
     setElementText('driver-form-title', 'Add Driver');
     setElementText('driver-submit-label', 'Register Driver');
     setFieldRequired('f-license', true);
+    setFieldRequired('f-license-back', true);
     setFieldRequired('f-dob', true);
     setFieldRequired('f-license-exp', true);
     form.reset();
@@ -1280,6 +1677,7 @@ async function handleCreateTricycle(evt) {
 
   try {
     const orDocument = await readFileAsDataUrl(document.getElementById('t-or')?.files?.[0] || null);
+    const vehicleImage = await readOptionalVehicleImage('t-image');
     await requestJson(riderApi, {
       method: 'POST',
       body: JSON.stringify({
@@ -1291,7 +1689,9 @@ async function handleCreateTricycle(evt) {
         engine,
         chassis,
         color,
+        orNumber: document.getElementById('t-or-number').value.trim(),
         orDocumentData: orDocument,
+        vehicleImageData: vehicleImage,
         driver_id: driverId,
         status: 'Pending'
       })
@@ -1323,9 +1723,115 @@ async function handleCreateTricycle(evt) {
   }
 }
 
+async function handleCreateFranchiseOwnerTricycle(evt) {
+  evt.preventDefault();
+  const form = evt.currentTarget;
+  const orCrImage = document.getElementById('ot-orcr-image')?.files?.[0];
+  if (!orCrImage) {
+    showToast('Please upload an OR/CR image as proof of vehicle documentation.', 'error');
+    return;
+  }
+  if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(orCrImage.type)) {
+    showToast('Upload the OR/CR proof as a JPEG, PNG, GIF, or WebP image.', 'error');
+    return;
+  }
+  if (orCrImage.size > 5 * 1024 * 1024) {
+    showToast('The OR/CR image must be 5 MB or smaller.', 'error');
+    return;
+  }
+
+  const payload = {
+    action: 'create-franchise-owner-tricycle',
+    brand: document.getElementById('ot-brand').value.trim(),
+    sticker: document.getElementById('ot-unit').value.trim(),
+    plate: document.getElementById('ot-plate').value.trim(),
+    engine: document.getElementById('ot-engine').value.trim(),
+    chassis: document.getElementById('ot-chassis').value.trim(),
+    color: document.getElementById('ot-color').value.trim(),
+    orNumber: document.getElementById('ot-or-number').value.trim(),
+    orCrDocumentData: '',
+    vehicleImageData: ''
+  };
+  if (!payload.brand || !payload.sticker || !payload.plate || !payload.engine || !payload.chassis || !payload.color) {
+    showToast('Please complete all required owner tricycle details.', 'error');
+    return;
+  }
+
+  setSubmitLoading(form, true);
+  try {
+    payload.orCrDocumentData = await readFileAsDataUrl(orCrImage);
+    payload.vehicleImageData = await readOptionalVehicleImage('ot-image');
+    await requestJson(riderApi, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    form.reset();
+    document.querySelector('[data-close="screen-add-owner-tricycle"]')?.click();
+    showToast('Owner tricycle saved separately from the registered fleet.');
+    await refreshDashboard(false);
+  } catch (error) {
+    if (error.status === 401) {
+      setAppVisible(false);
+      setLoginError('Your session expired. Please sign in again.');
+    } else {
+      showToast(error.message || 'Unable to save owner tricycle.', 'error');
+    }
+  } finally {
+    setSubmitLoading(form, false);
+  }
+}
+
+function openProfilePhotoMenu() {
+  const menu = document.getElementById('profile-photo-menu');
+  if (!menu || menu.open) return;
+  const hasPhoto = Boolean(state.profile?.photoUrl);
+  document.getElementById('profile-photo-view').disabled = !hasPhoto;
+  const change = document.getElementById('profile-photo-change');
+  change.hidden = false;
+  change.textContent = hasPhoto ? 'Change profile photo' : 'Upload profile photo';
+  document.getElementById('profile-photo-menu-description').textContent = hasPhoto
+    ? 'View your photo or choose a new one.'
+    : 'You have not uploaded a profile photo yet.';
+  menu.showModal();
+}
+
+async function handleProfilePhotoChange(event) {
+  const input = event.currentTarget;
+  const file = input.files?.[0];
+  if (!file) return;
+  const button = document.getElementById('profile-avatar-button');
+  const uploadButton = document.getElementById('profile-photo-upload');
+  const status = document.getElementById('profile-photo-status');
+  try {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) throw new Error('Choose a JPG, PNG, WebP or GIF image.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Your profile picture must be 5 MB or smaller.');
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    uploadButton.disabled = true;
+    uploadButton.textContent = 'Uploading…';
+    status.textContent = 'Uploading your profile picture.';
+    const dataUrl = await readFileAsDataUrl(file);
+    const result = await requestJson(riderApi, { method: 'POST', body: JSON.stringify({ action: 'update-profile-photo', photoDataUrl: dataUrl }) });
+    state.profile.photoUrl = result.photoUrl;
+    hydrateProfile();
+    status.textContent = 'Profile picture updated.';
+    showToast('Profile picture updated.');
+  } catch (error) {
+    status.textContent = error.message || 'Unable to upload profile picture.';
+    showToast(status.textContent, 'error');
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    uploadButton.disabled = false;
+    uploadButton.textContent = state.profile?.photoUrl ? 'Change profile photo' : 'Upload profile photo';
+    input.value = '';
+  }
+}
+
 async function handleUpdateProfile(evt) {
   evt.preventDefault();
   const name = document.getElementById('as-name').value.trim();
+  const middleName = document.getElementById('as-middle-name').value.trim();
   const email = document.getElementById('as-email').value.trim();
   const contact = document.getElementById('as-contact').value.trim();
 
@@ -1344,6 +1850,7 @@ async function handleUpdateProfile(evt) {
         action: 'update-profile',
         id: state.profile?.id,
         name,
+        middleName,
         email,
         contact
       })
@@ -1351,7 +1858,8 @@ async function handleUpdateProfile(evt) {
 
     await loaderDone;
     showToast('Profile updated successfully.');
-    document.querySelector('[data-close="screen-account-settings"]').click();
+    document.getElementById('screen-account-personal')?.classList.remove('active');
+    document.getElementById('screen-account-settings')?.classList.add('active');
     await refreshDashboard();
   } catch (error) {
     TFMSLoader.hide();
@@ -1361,13 +1869,50 @@ async function handleUpdateProfile(evt) {
   }
 }
 
+async function handleChangeAccountPassword(evt) {
+  evt.preventDefault();
+  const form = evt.currentTarget;
+  const currentPassword = document.getElementById('account-current-password').value;
+  const newPassword = document.getElementById('account-new-password').value;
+  const confirmPassword = document.getElementById('account-confirm-password').value;
+
+  if (newPassword.length < 8) {
+    showToast('New password must be at least 8 characters.', 'error');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('New passwords do not match.', 'error');
+    return;
+  }
+
+  setSubmitLoading(form, true);
+  try {
+    const result = await requestJson(riderApi, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'change-password',
+        currentPassword,
+        newPassword,
+        confirmPassword
+      })
+    });
+    form.reset();
+    showToast(result.notificationWarning || result.message || 'Password changed successfully.', result.notificationWarning ? 'error' : 'success');
+  } catch (error) {
+    showToast(error.message || 'Unable to change your password.', 'error');
+  } finally {
+    setSubmitLoading(form, false);
+  }
+}
+
 function ensureUploadGroups() {
   const driverGroup = document.getElementById('upload-groups');
   if (driverGroup && driverGroup.children.length === 0) {
     const documents = [
-      { id: 'f-license', label: "Driver's License", required: true },
-      { id: 'f-or', label: 'OR/CR', required: false },
-      { id: 'f-president', label: "President's Certificate", required: false }
+      { id: 'f-license', label: "Driver's License (Front)", required: true, accept: 'image/*,.pdf' },
+      { id: 'f-license-back', label: "Driver's License (Back Image)", required: true, accept: 'image/jpeg,image/png,image/gif,image/webp' },
+      { id: 'f-or', label: 'OR/CR', required: false, accept: 'image/*,.pdf' },
+      { id: 'f-president', label: "President's Certificate", required: false, accept: 'image/*,.pdf' }
     ];
 
     documents.forEach((doc) => {
@@ -1375,7 +1920,7 @@ function ensureUploadGroups() {
       wrapper.className = 'field';
       wrapper.innerHTML = `
         <label for="${doc.id}">${doc.label}</label>
-        <input id="${doc.id}" type="file" accept="image/*,.pdf" ${doc.required ? 'required' : ''}>
+        <input id="${doc.id}" type="file" accept="${doc.accept}" ${doc.required ? 'required' : ''}>
       `;
       driverGroup.appendChild(wrapper);
     });
@@ -1422,16 +1967,48 @@ function bindScreenActions() {
     });
   });
 
+  document.querySelectorAll('[data-account-settings-open]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = document.getElementById(button.dataset.accountSettingsOpen);
+      if (!target) return;
+      document.getElementById('screen-account-settings')?.classList.remove('active');
+      target.classList.add('active');
+    });
+  });
+  document.querySelectorAll('[data-account-settings-back]').forEach((button) => {
+    button.addEventListener('click', () => {
+      button.closest('.detail-screen')?.classList.remove('active');
+      document.getElementById('screen-account-settings')?.classList.add('active');
+    });
+  });
+
   document.getElementById('login-toggle-pw')?.addEventListener('click', () => {
     const input = document.getElementById('login-password');
-    const password = input.type === 'password' ? 'text' : 'password';
-    input.type = password;
+    const isVisible = input.type === 'text';
+    input.type = isVisible ? 'password' : 'text';
+    document.getElementById('login-toggle-pw').setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+    document.getElementById('login-toggle-pw').setAttribute('aria-pressed', String(!isVisible));
   });
 
   document.getElementById('signup-toggle-pw')?.addEventListener('click', () => {
     const input = document.getElementById('signup-password');
-    const password = input.type === 'password' ? 'text' : 'password';
-    input.type = password;
+    const isVisible = input.type === 'text';
+    input.type = isVisible ? 'password' : 'text';
+    document.getElementById('signup-toggle-pw').setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+    document.getElementById('signup-toggle-pw').setAttribute('aria-pressed', String(!isVisible));
+  });
+
+  document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+    const icons = button.querySelectorAll('svg');
+    button.addEventListener('click', () => {
+      const isVisible = input.type === 'text';
+      input.type = isVisible ? 'password' : 'text';
+      button.setAttribute('aria-label', `${isVisible ? 'Show' : 'Hide'} ${input.labels?.[0]?.textContent.toLowerCase() || 'password'}`);
+      button.setAttribute('aria-pressed', String(!isVisible));
+      icons[0].hidden = !isVisible;
+      icons[1].hidden = isVisible;
+    });
   });
 
   document.getElementById('auth-switch-btn')?.addEventListener('click', () => {
@@ -1440,24 +2017,78 @@ function bindScreenActions() {
     setAuthMode(isSignup ? 'login' : 'signup');
   });
 
+  document.getElementById('login-forgot')?.addEventListener('click', () => {
+    const loginIdentifier = document.getElementById('login-username').value.trim();
+    const resetEmail = document.getElementById('reset-email');
+    resetEmail.value = loginIdentifier.includes('@') ? loginIdentifier : '';
+    document.getElementById('login-form')?.classList.add('rider-hidden');
+    document.getElementById('signup-form')?.classList.add('rider-hidden');
+    document.getElementById('password-reset-request-form')?.classList.remove('rider-hidden');
+    document.getElementById('auth-switch-row')?.classList.add('rider-hidden');
+    document.getElementById('login-welcome-heading')?.classList.add('rider-hidden');
+    setLoginError('');
+    setPasswordResetStatus('');
+    resetEmail.focus();
+  });
+  document.getElementById('reset-request-back')?.addEventListener('click', () => setAuthMode('login'));
+  document.getElementById('password-reset-request-form')?.addEventListener('submit', handlePasswordResetRequest);
+
   document.getElementById('login-form')?.addEventListener('submit', handleLogin);
   document.getElementById('signup-form')?.addEventListener('submit', handleSignup);
+  ['login-username', 'login-password'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      if (document.getElementById('login-error')?.style.display !== 'none') setLoginError('');
+    });
+  });
+  ['signup-name', 'signup-email', 'signup-password'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', () => {
+      if (document.getElementById('signup-error')?.style.display !== 'none') setSignupError('');
+    });
+  });
   document.getElementById('register-franchise-form')?.addEventListener('submit', handleCreateFranchise);
   document.getElementById('renewal-form')?.addEventListener('submit', handleApplyRenewal);
   document.getElementById('add-driver-form')?.addEventListener('submit', handleCreateDriver);
   document.getElementById('td-status-btn')?.addEventListener('click', handleStatusButtonClick);
-  document.getElementById('dd-status-btn')?.addEventListener('click', handleStatusButtonClick);
+  document.getElementById('dd-status-btn')?.addEventListener('click', () => {
+    closeDriverActionsMenu();
+    handleStatusButtonClick();
+  });
+  document.getElementById('dd-actions-toggle')?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const menu = document.getElementById('dd-actions-menu');
+    const isOpen = menu?.classList.toggle('is-open') || false;
+    document.getElementById('dd-actions-toggle')?.setAttribute('aria-expanded', String(isOpen));
+  });
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.driver-actions')) closeDriverActionsMenu();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeDriverActionsMenu();
+  });
   document.getElementById('td-remove-btn')?.addEventListener('click', () => {
-    const id = document.getElementById('td-remove-btn').dataset.tricycleId;
-    if (id) openRemoveConfirmation('tricycle', Number(id));
+    const button = document.getElementById('td-remove-btn');
+    const id = button.dataset.tricycleId;
+    if (id) openRemoveConfirmation(button.dataset.recordType || 'tricycle', Number(id));
   });
   document.getElementById('dd-remove-btn')?.addEventListener('click', () => {
+    closeDriverActionsMenu();
     const id = document.getElementById('dd-remove-btn').dataset.driverId;
     if (id) openRemoveConfirmation('driver', Number(id));
   });
   document.getElementById('confirm-cancel')?.addEventListener('click', closeStatusConfirmation);
   document.getElementById('confirm-ok')?.addEventListener('click', handleStatusConfirmation);
+  document.getElementById('assign-tricycle-cancel')?.addEventListener('click', () => {
+    document.getElementById('assign-tricycle-overlay')?.classList.remove('active');
+  });
+  document.getElementById('assign-tricycle-confirm')?.addEventListener('click', () => {
+    const assignButton = document.getElementById('dd-assign-btn');
+    const tricycleSelect = document.getElementById('dd-tricycle-select');
+    if (assignButton?.dataset.driverId && tricycleSelect) {
+      assignDriver(assignButton.dataset.driverId, tricycleSelect.value);
+    }
+  });
   document.getElementById('dd-edit-btn')?.addEventListener('click', () => {
+    closeDriverActionsMenu();
     const driver = state.drivers.find((item) => String(item.id) === String(document.getElementById('dd-edit-btn').dataset.driverId));
     if (!driver) return;
     editingDriverId = driver.id;
@@ -1465,6 +2096,7 @@ function bindScreenActions() {
     document.getElementById('driver-submit-label').textContent = 'Save Changes';
     document.getElementById('add-driver-form').reset();
     setFieldRequired('f-license', false);
+    setFieldRequired('f-license-back', false);
     setFieldRequired('f-dob', false);
     setFieldRequired('f-license-exp', false);
     document.getElementById('f-name').value = driver.name || '';
@@ -1478,6 +2110,33 @@ function bindScreenActions() {
     document.getElementById('screen-add-driver').classList.add('active');
   });
   document.getElementById('add-tricycle-form')?.addEventListener('submit', handleCreateTricycle);
+  document.getElementById('add-owner-tricycle-form')?.addEventListener('submit', handleCreateFranchiseOwnerTricycle);
+  document.getElementById('td-photo-view')?.addEventListener('click', () => {
+    const collection = currentVehiclePhotoTarget?.type === 'owner_tricycle' ? state.franchiseOwnerTricycles : state.tricycles;
+    const vehicle = collection.find((item) => String(item.id) === String(currentVehiclePhotoTarget?.id));
+    if (vehicle?.image) {
+      openDocumentViewer(vehicle.image, `${vehicle.unit || 'Tricycle'} image`);
+    } else {
+      document.getElementById('td-photo-file')?.click();
+    }
+  });
+  document.getElementById('td-photo-upload-trigger')?.addEventListener('click', () => {
+    document.getElementById('td-photo-file')?.click();
+  });
+  document.getElementById('td-photo-file')?.addEventListener('change', async (event) => {
+    const file = event.target.files?.[0];
+    if (file) await uploadVehicleImage(file);
+    event.target.value = '';
+  });
+  document.getElementById('td-photo-reset')?.addEventListener('click', resetVehicleImage);
+  document.getElementById('btn-add-owner-tricycle')?.addEventListener('click', () => {
+    if (!state.franchise?.registered) {
+      showToast('Register and get your franchise approved before adding owner tricycles.', 'error');
+      return;
+    }
+    const screen = document.getElementById('screen-add-owner-tricycle');
+    if (screen) screen.classList.add('active');
+  });
   document.getElementById('td-more')?.addEventListener('click', () => {
     const tricycle = state.tricycles.find((item) => String(item.id) === String(document.getElementById('td-more').dataset.tricycleId));
     if (!tricycle) return;
@@ -1492,12 +2151,31 @@ function bindScreenActions() {
     document.getElementById('t-engine').value = tricycle.engine || '';
     document.getElementById('t-chassis').value = tricycle.chassis || '';
     document.getElementById('t-color').value = tricycle.color || '';
+    document.getElementById('t-or-number').value = tricycle.orNumber || '';
     const driver = state.drivers.find((item) => item.name === tricycle.driver);
     document.getElementById('t-driver').value = driver?.id || '';
     document.querySelector('[data-close="detail-tricycle"]').click();
     document.getElementById('screen-add-tricycle').classList.add('active');
   });
+  document.getElementById('profile-photo-button')?.addEventListener('click', openProfilePhotoMenu);
+  document.getElementById('profile-photo-upload')?.addEventListener('click', openProfilePhotoMenu);
+  document.getElementById('profile-avatar-button')?.addEventListener('click', openProfilePhotoMenu);
+  document.getElementById('profile-photo-view')?.addEventListener('click', () => {
+    document.getElementById('profile-photo-menu').close();
+    if (state.profile?.photoUrl) openDocumentViewer(state.profile.photoUrl, 'Profile photo');
+  });
+  document.getElementById('profile-photo-change')?.addEventListener('click', () => {
+    document.getElementById('profile-photo-menu').close();
+    document.getElementById('profile-photo-input').click();
+  });
+  document.getElementById('profile-photo-menu')?.addEventListener('click', (event) => {
+    if (event.target !== event.currentTarget) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.currentTarget.close();
+  });
+  document.getElementById('profile-photo-input')?.addEventListener('change', handleProfilePhotoChange);
   document.getElementById('account-settings-form')?.addEventListener('submit', handleUpdateProfile);
+  document.getElementById('account-password-form')?.addEventListener('submit', handleChangeAccountPassword);
 
   document.getElementById('btn-open-register-franchise')?.addEventListener('click', () => {
     const screen = document.getElementById('screen-register-franchise');
@@ -1509,6 +2187,7 @@ function bindScreenActions() {
     document.getElementById('driver-form-title').textContent = 'Add Driver';
     document.getElementById('driver-submit-label').textContent = 'Register Driver';
     setFieldRequired('f-license', true);
+    setFieldRequired('f-license-back', true);
     setFieldRequired('f-dob', true);
     setFieldRequired('f-license-exp', true);
     const screen = document.getElementById('screen-add-driver');
@@ -1577,6 +2256,14 @@ async function initializeApp() {
   bindScreenActions();
   setLoginError('');
   setAppVisible(false);
+
+  const legacyResetToken = new URLSearchParams(window.location.search).get('reset_token');
+  if (legacyResetToken) {
+    const resetUrl = new URL('reset_password.html', window.location.href);
+    resetUrl.searchParams.set('token', legacyResetToken);
+    window.location.replace(resetUrl);
+    return;
+  }
 
   const hasSession = await refreshDashboard();
   if (!hasSession) {

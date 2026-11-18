@@ -46,7 +46,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 260px;
+    width: 280px;
     flex-shrink: 0;
     background: var(--navy);
     color: #fff;
@@ -112,7 +112,7 @@
     min-width: 0;
     width: 100%;
     max-width: none;
-    margin: 0 0 0 260px;
+    margin: 0 0 0 280px;
   }
 
   .topbar {
@@ -264,6 +264,8 @@
     overflow: hidden;
     width: 100%;
   }
+
+  #ownerReviewPanel[hidden] { display: none; }
 
   .panel-head {
     display: flex;
@@ -539,7 +541,13 @@
   .view-item .vlabel { font-size: 12.5px; font-weight: 600; color: var(--text-gray); margin-bottom: 3px; }
   .view-item .vvalue { font-size: 14.5px; font-weight: 500; color: var(--text-navy); }
   .view-item.full { grid-column: 1 / -1; }
-  .document-preview { display: block; width: 100%; max-height: 260px; object-fit: contain; border: 1px solid var(--border-gray); border-radius: 8px; background: var(--card-bg); }
+  .document-preview { display: block; width: 100%; max-height: 260px; object-fit: contain; border: 1px solid var(--border-gray); border-radius: 8px; background: var(--card-bg); cursor: zoom-in; }
+  .document-preview-trigger { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
+  .image-viewer { display: none; position: fixed; inset: 0; z-index: 200; align-items: center; justify-content: center; padding: 56px 24px 24px; background: rgba(10,14,26,.88); }
+  .image-viewer.open { display: flex; }
+  .image-viewer img { display: block; max-width: min(100%, 1400px); max-height: calc(100vh - 80px); object-fit: contain; }
+  .image-viewer-close { position: absolute; top: 16px; right: 20px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; }
+  .image-viewer-close:hover { background: rgba(255,255,255,.28); }
 
   .confirm-text { font-size: 14.5px; color: var(--text-gray); line-height: 1.5; }
   .confirm-text b { color: var(--text-navy); }

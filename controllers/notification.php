@@ -65,7 +65,7 @@ function listNotifications()
 	$placeholders = implode(', ', array_fill(0, count($notificationEmails), '?'));
 	$rows = getAllRecords(
 		'notifications',
-		"WHERE LOWER(recipient_email) IN ($placeholders) ORDER BY is_read ASC, created_at DESC LIMIT 100",
+		"WHERE LOWER(recipient_email) IN ($placeholders) ORDER BY is_read ASC, created_at DESC",
 		$notificationEmails
 	);
 	respond(['success' => true, 'notifications' => array_map('formatNotification', $rows)]);

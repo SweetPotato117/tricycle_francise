@@ -5,6 +5,7 @@ header('Content-Type: application/json; charset=utf-8');
 $modelsPath = __DIR__ . '/../models';
 set_include_path($modelsPath . PATH_SEPARATOR . get_include_path());
 require_once $modelsPath . '/functions.php';
+require_once $modelsPath . '/franchise_dates.php';
 require_once $modelsPath . '/notifications.php';
 require_once $modelsPath . '/notification_triggers.php';
 require_once $modelsPath . '/upload.php';
@@ -39,10 +40,10 @@ function renewalPayload($data)
 	if (!$franchise) {
 		respond(['success' => false, 'message' => 'Selected franchise not found.'], 422);
 	}
-	$expiryYear = !empty($franchise['expiry_date']) ? (int) date('Y', strtotime($franchise['expiry_date'])) : 0;
-	$year = $expiryYear > 0 ? $expiryYear - 1 : (int) date('Y');
-	$renewalDate = $year . '-01-01';
-	$dueDate = ($year + 1) . '-01-01';
+	$term = franchiseRenewalTerm($franchise);
+	$year = $term['year'];
+	$renewalDate = $term['start'];
+	$dueDate = $term['end'];
 
 	return [
 		'franchise_id' => $franchiseId,

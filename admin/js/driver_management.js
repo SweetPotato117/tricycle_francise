@@ -32,22 +32,50 @@
   /* ---------- data loaded from the drivers tables ---------- */
   const driverApi = '../controllers/driver_management.php';
   let drivers = [];
-  const driverFiles = ['driverLicenseFile', 'orCrFile', 'presidentCertificateFile'];
-  const driverFileData = { driverLicenseData: '', orCrData: '', presidentCertificateData: '' };
+  const driverFiles = ['driverLicenseFile', 'driverLicenseBackFile', 'orCrFile', 'presidentCertificateFile'];
+  const driverFileData = { driverLicenseData: '', driverLicenseBackData: '', orCrData: '', presidentCertificateData: '' };
 
   function readDriverFile(input) {
     const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = event => { driverFileData[input.dataset.payload] = event.target.result; input.previousElementSibling.querySelector('span').textContent = file.name; };
-    reader.readAsDataURL(file);
+    if (!file) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = event => {
+        driverFileData[input.dataset.payload] = event.target.result;
+        input.previousElementSibling.querySelector('span').textContent = file.name;
+        resolve();
+      };
+      reader.onerror = () => reject(new Error(`Unable to read ${file.name}.`));
+      reader.readAsDataURL(file);
+    });
   }
   driverFiles.forEach(id => {
     const input = document.getElementById(id);
-    input.dataset.payload = id === 'driverLicenseFile' ? 'driverLicenseData' : id === 'orCrFile' ? 'orCrData' : 'presidentCertificateData';
+    input.dataset.payload = {
+      driverLicenseFile: 'driverLicenseData',
+      driverLicenseBackFile: 'driverLicenseBackData',
+      orCrFile: 'orCrData',
+      presidentCertificateFile: 'presidentCertificateData'
+    }[id];
+    input.dataset.defaultLabel = input.previousElementSibling.querySelector('span').textContent;
     input.style.display = 'none';
     input.previousElementSibling.addEventListener('click', () => input.click());
-    input.addEventListener('change', () => readDriverFile(input));
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) {
+        driverFileData[input.dataset.payload] = '';
+        input.previousElementSibling.querySelector('span').textContent = input.dataset.defaultLabel;
+        return;
+      }
+      if (id === 'driverLicenseBackFile' && file && (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
+        input.value = '';
+        driverFileData[input.dataset.payload] = '';
+        input.previousElementSibling.querySelector('span').textContent = input.dataset.defaultLabel;
+        alert('The driver license back must be a JPEG, PNG, GIF, or WebP image no larger than 5 MB.');
+        return;
+      }
+      readDriverFile(input).catch(error => alert(error.message));
+    });
   });
 
   async function apiRequest(payload = null) {
@@ -202,8 +230,13 @@
     editingId = null;
     driverModalTitle.textContent = 'Add Driver';
     driverForm.reset();
-    driverFiles.forEach(id => { document.getElementById(id).value = ''; });
+    driverFiles.forEach(id => {
+      const input = document.getElementById(id);
+      input.value = '';
+      input.previousElementSibling.querySelector('span').textContent = input.dataset.defaultLabel;
+    });
     driverFileData.driverLicenseData = '';
+    driverFileData.driverLicenseBackData = '';
     driverFileData.orCrData = '';
     driverFileData.presidentCertificateData = '';
     driverModalOverlay.classList.add('open');
@@ -222,8 +255,13 @@
     document.getElementById('fOrCrNumber').value = d.orCrNumber || '';
     document.getElementById('fStatus').value = d.status;
     document.getElementById('fAddress').value = d.address;
-    driverFiles.forEach(id => { document.getElementById(id).value = ''; });
+    driverFiles.forEach(id => {
+      const input = document.getElementById(id);
+      input.value = '';
+      input.previousElementSibling.querySelector('span').textContent = input.dataset.defaultLabel;
+    });
     driverFileData.driverLicenseData = '';
+    driverFileData.driverLicenseBackData = '';
     driverFileData.orCrData = '';
     driverFileData.presidentCertificateData = '';
     driverModalOverlay.classList.add('open');
@@ -250,6 +288,21 @@
       tricycle: "Unassigned"
     };
     const submitButton = e.submitter;
+    const backImage = document.getElementById('driverLicenseBackFile').files[0];
+    if (!editingId && !backImage) {
+      alert("Please upload the driver's license back image.");
+      return;
+    }
+    if (backImage && (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(backImage.type) || backImage.size > 5 * 1024 * 1024)) {
+      alert('The driver license back must be a JPEG, PNG, GIF, or WebP image no larger than 5 MB.');
+      return;
+    }
+    try {
+      await Promise.all(driverFiles.map(id => readDriverFile(document.getElementById(id))));
+    } catch (error) {
+      alert(error.message);
+      return;
+    }
     setSubmitLoading(submitButton, true);
 
     try {
@@ -265,6 +318,31 @@
 
   /* ---------- view modal ---------- */
   const viewModalOverlay = document.getElementById('viewModalOverlay');
+  const imageViewer = document.getElementById('imageViewer');
+  const imageViewerImage = document.getElementById('imageViewerImage');
+  const imageViewerClose = document.getElementById('imageViewerClose');
+
+  function closeImageViewer() {
+    imageViewer.classList.remove('open');
+    imageViewer.setAttribute('aria-hidden', 'true');
+    imageViewerImage.src = '';
+  }
+
+  function openImageViewer(url, alt) {
+    imageViewerImage.src = url;
+    imageViewerImage.alt = alt;
+    imageViewer.classList.add('open');
+    imageViewer.setAttribute('aria-hidden', 'false');
+    imageViewerClose.focus();
+  }
+
+  imageViewerClose.addEventListener('click', closeImageViewer);
+  imageViewer.addEventListener('click', (event) => {
+    if (event.target === imageViewer) closeImageViewer();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && imageViewer.classList.contains('open')) closeImageViewer();
+  });
 
   function openViewModal(id) {
     const d = drivers.find(x => x.id === id);
@@ -278,14 +356,25 @@
     document.getElementById('vAddress').textContent = d.address;
     document.getElementById('vLicenseNumber').textContent = d.driverLicenseNumber || '—';
     document.getElementById('vOrCrNumber').textContent = d.orCrNumber || '—';
-    const documentLinks = [d.driverLicense, d.orCr, d.presidentCertificate];
+    const documentLinks = [d.driverLicense, d.driverLicenseBack, d.orCr, d.presidentCertificate];
+    const documentLabels = ["Driver license front", "Driver license back", "OR/CR", "President's certificate"];
     document.querySelectorAll('#driverDocuments .doc-link').forEach((link, index) => {
       const url = documentLinks[index];
       const isPdf = /\.pdf$/i.test(url || '');
       link.textContent = url ? (isPdf ? 'Open PDF' : '') : 'No file';
-      link.innerHTML = url && !isPdf
-        ? `<img class="document-preview" src="${url}" alt="${['Driver license', 'OR/CR', "President's certificate"][index]}">`
-        : link.textContent;
+      if (url && !isPdf) {
+        const previewButton = document.createElement('button');
+        previewButton.type = 'button';
+        previewButton.className = 'document-preview-trigger';
+        previewButton.setAttribute('aria-label', `View ${documentLabels[index]}`);
+        const image = document.createElement('img');
+        image.className = 'document-preview';
+        image.src = url;
+        image.alt = documentLabels[index];
+        previewButton.appendChild(image);
+        previewButton.addEventListener('click', () => openImageViewer(url, documentLabels[index]));
+        link.appendChild(previewButton);
+      }
       link.style.display = url && !isPdf ? 'block' : '';
       link.onclick = url && isPdf ? () => window.open(url, '_blank') : null;
     });
