@@ -225,14 +225,18 @@ function createNotification($title, $message, $type = 'Franchise', $severity = '
     
     mysqli_stmt_bind_param($stmt, $types, $title_safe, $message, $type, $severity, $recipient_email, $related_id, $related_type);
     
-    if (!mysqli_stmt_execute($stmt)) {
-        error_log("Execute failed: " . mysqli_error($conn));
-        mysqli_stmt_close($stmt);
+    try {
+        if (!mysqli_stmt_execute($stmt)) {
+            error_log('Notification insert failed: ' . mysqli_stmt_errno($stmt));
+            return 0;
+        }
+        $notif_id = mysqli_insert_id($conn);
+    } catch (mysqli_sql_exception $error) {
+        error_log('Notification insert failed: ' . $error->getCode());
         return 0;
+    } finally {
+        mysqli_stmt_close($stmt);
     }
-
-    $notif_id = mysqli_insert_id($conn);
-    mysqli_stmt_close($stmt);
 
     // Send email if recipient provided
     if ($sendEmail && $recipient_email && filter_var($recipient_email, FILTER_VALIDATE_EMAIL)) {
